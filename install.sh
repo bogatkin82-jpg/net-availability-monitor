@@ -182,20 +182,39 @@ plutil -lint "$AGENTS_DIR/$MENUBAR_LABEL.plist" >/dev/null
 # 7. Загрузить агенты. Если launchd недоступен из текущего окружения (например,
 #    установка идёт из песочницы/агента), процессы поднимаются вручную, а
 #    автозапуск включится при следующем входе — plist-файлы уже лежат на месте.
+launchctl_bootstrap() {
+    # launchctl bootstrap иногда зависает (EIO при установке из-под агента/TCC).
+    # Ограничиваем ожидание 8 секундами и падаем в ручной запуск.
+    local plist="$1" pid guard rc
+    launchctl bootstrap "gui/$UID_NUM" "$plist" 2>/dev/null &
+    pid=$!
+    ( sleep 8; kill "$pid" 2>/dev/null ) &
+    guard=$!
+    wait "$pid" 2>/dev/null
+    rc=$?
+    kill "$guard" 2>/dev/null || true
+    return $rc
+}
+
 SERVER_AGENT=0
 MENUBAR_AGENT=0
-if launchctl bootstrap "gui/$UID_NUM" "$AGENTS_DIR/$SERVER_LABEL.plist" 2>/dev/null; then
+if launchctl_bootstrap "$AGENTS_DIR/$SERVER_LABEL.plist"; then
     SERVER_AGENT=1
     launchctl enable "gui/$UID_NUM/$SERVER_LABEL" 2>/dev/null || true
 fi
-if launchctl bootstrap "gui/$UID_NUM" "$AGENTS_DIR/$MENUBAR_LABEL.plist" 2>/dev/null; then
+if launchctl_bootstrap "$AGENTS_DIR/$MENUBAR_LABEL.plist"; then
     MENUBAR_AGENT=1
     launchctl enable "gui/$UID_NUM/$MENUBAR_LABEL" 2>/dev/null || true
 fi
 if [ "$SERVER_AGENT" -eq 0 ]; then
-    info "launchd недоступен — запускаю сервер вручную (автозапуск включится при следующем входе)"
-    ( cd "$RUNTIME_DIR" && nohup "$PYTHON_BIN" -B server.py --port "$SERVER_PORT" \
-        >> "$LOGS_DIR/netmon-server.log" 2>&1 & )
+    if lsof -nP -iTCP:"$SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        info "launchd недоступен, но сервер уже слушает порт $SERVER_PORT — оставляю как есть"
+    else
+        info "launchd недоступен — запускаю сервер вручную (автозапуск включится при следующем входе)"
+        ( cd "$RUNTIME_DIR" && nohup env NETMON_PROXY="$NETMON_PROXY_VALUE" \
+            "$PYTHON_BIN" -B server.py --port "$SERVER_PORT" \
+            >> "$LOGS_DIR/netmon-server.log" 2>&1 < /dev/null & )
+    fi
 fi
 if [ "$MENUBAR_AGENT" -eq 0 ]; then
     info "launchd недоступен — запускаю индикатор вручную"
