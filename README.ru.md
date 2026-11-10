@@ -28,7 +28,7 @@
 |---|---|---|
 | **macOS** | Python-сервер + дашборд в браузере + нативная точка в меню-баре (Swift/AppKit), автозапуск через LaunchAgents | `./install.sh` |
 | **Windows** | Python-сервер + дашборд + точка в системном трее, один `.exe` (PyInstaller), автозапуск через HKCU Run | `NetMonitor-windows-x64.zip` из Releases |
-| **Android** | Нативное приложение Kotlin/Compose со своими проверками, журналом, настройками и уведомлениями | `app-debug.apk` из Releases |
+| **Android** | Нативное приложение Kotlin/Compose со своими проверками, журналом, настройками и уведомлениями | `net-availability-monitor-android-<тег>.apk` из Releases |
 | **Linux** | Python-сервер + дашборд (трей опционально, `tray.py`) | `python3 server.py` |
 
 Все платформы используют общий [`config.json`](config.json): сервисы, эндпоинты, таймауты,
@@ -65,7 +65,7 @@ open http://127.0.0.1:8099/
 
 ## Android
 
-Установите `app-debug.apk` из последнего Release (разрешите установку из неизвестных
+Установите APK (`net-availability-monitor-android-<тег>.apk`) из последнего Release (разрешите установку из неизвестных
 источников), откройте приложение и выдайте разрешение на уведомления. Телефон проверяет
 сервисы сам — компьютер не нужен. Foreground-service продолжает опрос в фоне и уведомляет,
 когда YouTube/Telegram становятся заблокированными или недоступными. Настройки (интервал,
@@ -167,7 +167,7 @@ cd android && ./gradlew test assembleDebug              # Android (JDK 17 + Andr
 ```
 
 CI собирает артефакты и прикрепляет их к GitHub Releases на тегах `v*`:
-`NetMonitor-windows-x64.zip`, `app-debug.apk`.
+`NetMonitor-windows-x64.zip`, `net-availability-monitor-android-<тег>.apk`.
 
 ## Проверка
 

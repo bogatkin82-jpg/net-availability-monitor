@@ -15,10 +15,86 @@
 import Cocoa
 import Foundation
 
-let monitorStateURL = URL(string: "http://127.0.0.1:8099/api/state")!
-let monitorCheckURL = URL(string: "http://127.0.0.1:8099/api/check")!
-let dashboardURL = URL(string: "http://127.0.0.1:8099/")!
 let logPath = "/tmp/netmon-menubar.log"
+
+func colorFromHex(_ value: String) -> NSColor? {
+    var text = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    if text.hasPrefix("#") { text.removeFirst() }
+    guard text.count == 6, let raw = UInt32(text, radix: 16) else { return nil }
+    return NSColor(srgbRed: CGFloat((raw >> 16) & 0xFF) / 255.0,
+                   green: CGFloat((raw >> 8) & 0xFF) / 255.0,
+                   blue: CGFloat(raw & 0xFF) / 255.0,
+                   alpha: 1.0)
+}
+
+struct AppSettings {
+    var mode = "dot"
+    var overlayWindow: CGFloat = 24
+    var overlayDot: CGFloat = 9.6
+    var statusItem: CGFloat = 22
+    var port = 8099
+    var labels: [String: String] = [:]
+    var colors: [String: NSColor] = [:]
+
+    static func load() -> AppSettings {
+        var settings = AppSettings()
+        let defaultLabels = ["ok": "Доступен", "degraded": "Нестабильно",
+                             "blocked": "Похоже на блокировку", "down": "Недоступен",
+                             "unknown": "Нет данных"]
+        let defaultColors: [String: NSColor] = [
+            "ok": .systemGreen, "degraded": .systemOrange,
+            "blocked": .systemRed, "down": .systemRed, "unknown": .systemGray,
+        ]
+        settings.labels = defaultLabels
+        settings.colors = defaultColors
+        var mode = ProcessInfo.processInfo.environment["NETBAR_MODE"] ?? ""
+
+        var configPath = ProcessInfo.processInfo.environment["NETMON_CONFIG"]
+        if configPath == nil, let dir = ProcessInfo.processInfo.environment["NETMON_DIR"] {
+            configPath = dir + "/config.json"
+        }
+        if configPath == nil, let raw = try? String(contentsOf:
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".netmon-dir"),
+            encoding: .utf8) {
+            configPath = raw.trimmingCharacters(in: .whitespacesAndNewlines) + "/config.json"
+        }
+        guard let path = configPath,
+              let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            if !["overlay", "dot", "text"].contains(mode) { mode = "dot" }
+            settings.mode = mode
+            return settings
+        }
+        if let server = root["server"] as? [String: Any],
+           let port = server["port"] as? Int, port > 0, port < 65536 {
+            settings.port = port
+        }
+        if let labels = root["status_labels"] as? [String: String] {
+            settings.labels = defaultLabels.merging(labels) { _, new in new }
+        }
+        if let colors = root["status_colors"] as? [String: String] {
+            for (status, hex) in colors {
+                if let color = colorFromHex(hex) { settings.colors[status] = color }
+            }
+        }
+        if let display = root["display"] as? [String: Any],
+           let macos = display["macos_menubar"] as? [String: Any] {
+            if mode.isEmpty, let value = macos["mode"] as? String { mode = value }
+            if let value = macos["overlay_window_pt"] as? Double { settings.overlayWindow = CGFloat(value) }
+            if let value = macos["overlay_dot_pt"] as? Double { settings.overlayDot = CGFloat(value) }
+            if let value = macos["status_item_pt"] as? Double { settings.statusItem = CGFloat(value) }
+        }
+        if !["overlay", "dot", "text"].contains(mode) { mode = "dot" }
+        settings.mode = mode
+        return settings
+    }
+}
+
+let APP_SETTINGS = AppSettings.load()
+let serverBaseURL = URL(string: "http://127.0.0.1:\(APP_SETTINGS.port)")!
+let monitorStateURL = serverBaseURL.appendingPathComponent("api/state")
+let monitorCheckURL = serverBaseURL.appendingPathComponent("api/check")
+let dashboardURL = serverBaseURL
 
 // MARK: - Утилиты
 
@@ -40,6 +116,7 @@ func uiFont(_ size: CGFloat, _ weight: NSFont.Weight) -> NSFont {
 }
 
 func statusColor(_ status: String) -> NSColor {
+    if let color = APP_SETTINGS.colors[status] { return color }
     switch status {
     case "ok": return .systemGreen
     case "degraded": return .systemOrange
@@ -58,6 +135,7 @@ func statusGlyph(_ status: String) -> String {
 }
 
 func statusName(_ status: String) -> String {
+    if let label = APP_SETTINGS.labels[status] { return label.lowercased() }
     switch status {
     case "ok": return "доступен"
     case "degraded": return "нестабильно"
@@ -164,43 +242,6 @@ if CommandLine.arguments.contains("--dump") {
     exit(dumpStatus())
 }
 
-// MARK: - Настройки отображения из config.json
-
-struct DisplaySettings {
-    var mode: String
-    var overlayWindow: CGFloat
-    var overlayDot: CGFloat
-    var statusItem: CGFloat
-
-    static func load() -> DisplaySettings {
-        var mode = ProcessInfo.processInfo.environment["NETBAR_MODE"] ?? ""
-        var window: CGFloat = 24
-        var dot: CGFloat = 9.6
-        var item: CGFloat = 22
-        var configPath = ProcessInfo.processInfo.environment["NETMON_CONFIG"]
-        if configPath == nil, let dir = ProcessInfo.processInfo.environment["NETMON_DIR"] {
-            configPath = dir + "/config.json"
-        }
-        if configPath == nil, let raw = try? String(contentsOf:
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".netmon-dir"),
-            encoding: .utf8) {
-            configPath = raw.trimmingCharacters(in: .whitespacesAndNewlines) + "/config.json"
-        }
-        if let path = configPath,
-           let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
-           let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let display = root["display"] as? [String: Any],
-           let macos = display["macos_menubar"] as? [String: Any] {
-            if mode.isEmpty, let value = macos["mode"] as? String { mode = value }
-            if let value = macos["overlay_window_pt"] as? Double { window = CGFloat(value) }
-            if let value = macos["overlay_dot_pt"] as? Double { dot = CGFloat(value) }
-            if let value = macos["status_item_pt"] as? Double { item = CGFloat(value) }
-        }
-        if !["overlay", "dot", "text"].contains(mode) { mode = "dot" }
-        return DisplaySettings(mode: mode, overlayWindow: window, overlayDot: dot, statusItem: item)
-    }
-}
-
 // MARK: - Плавающая точка (overlay)
 
 final class DotView: NSView {
@@ -273,8 +314,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var serverAvailable = false
     private var checking = false
     private var lastTitleSignature = ""
-    private let settings = DisplaySettings.load()
-    private var displayMode: String { settings.mode }
+    private var displayMode: String { APP_SETTINGS.mode }
     private let menu = NSMenu()
     private let projectDirectory = findProjectDirectory()
 
@@ -318,13 +358,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func createStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if displayMode != "text" {
-            statusItem?.length = settings.statusItem
+            statusItem?.length = APP_SETTINGS.statusItem
         }
         statusItem?.menu = menu
     }
 
     private func createOverlay() {
-        let size: CGFloat = settings.overlayWindow
+        let size: CGFloat = APP_SETTINGS.overlayWindow
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: size, height: size),
                               styleMask: [.borderless],
                               backing: .buffered,
@@ -337,7 +377,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.ignoresMouseEvents = false
 
         let view = DotView(frame: NSRect(x: 0, y: 0, width: size, height: size))
-        view.dotDiameter = settings.overlayDot
+        view.dotDiameter = APP_SETTINGS.overlayDot
         view.onActivate = { [weak self] in self?.showOverlayMenu() }
         view.onContextMenu = { [weak self] in self?.openDashboard() }
         view.onDragEnd = { [weak self] in self?.saveOverlayPosition() }
@@ -664,7 +704,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["python3", "-B", "server.py", "--port", "8099"]
+        process.arguments = ["python3", "-B", "server.py", "--port", String(APP_SETTINGS.port)]
         process.currentDirectoryURL = directory
         let logURL = URL(fileURLWithPath: "/tmp/netmon-8099.log")
         if !FileManager.default.fileExists(atPath: logURL.path) {

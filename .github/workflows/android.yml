@@ -41,9 +41,6 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          # basic = GitHub Actions cache, работает и в приватных/форковых PR
-          cache-provider: basic
-          cache-read-only: false
           validate-wrappers: true
 
       - name: Ensure local.properties (SDK path)

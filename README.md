@@ -28,7 +28,7 @@ control channel proves the internet itself is working.
 |---|---|---|
 | **macOS** | Python server + browser dashboard + native menu-bar dot (Swift/AppKit), autostart via LaunchAgents | `./install.sh` |
 | **Windows** | Python server + dashboard + system-tray dot, single `.exe` (PyInstaller), autostart via HKCU Run | `NetMonitor-windows-x64.zip` from Releases |
-| **Android** | Native Kotlin/Compose app with its own checks, incident log, settings and notifications | `app-debug.apk` from Releases |
+| **Android** | Native Kotlin/Compose app with its own checks, incident log, settings and notifications | `net-availability-monitor-android-<tag>.apk` from Releases |
 | **Linux** | Python server + dashboard (tray optional, `tray.py`) | `python3 server.py` |
 
 All platforms share the same [`config.json`](config.json): services, endpoints, timeouts,
@@ -65,7 +65,7 @@ including the SmartScreen note (the build is unsigned).
 
 ## Android
 
-Install `app-debug.apk` from the latest Release (allow installation from unknown sources),
+Install the APK (`net-availability-monitor-android-<tag>.apk`) from the latest Release (allow installation from unknown sources),
 open the app and grant the notification permission. The phone performs checks itself —
 no PC required. A foreground service keeps polling in the background and notifies you when
 YouTube/Telegram become blocked or unreachable. Settings (interval, thresholds, enabled
@@ -168,7 +168,7 @@ cd android && ./gradlew test assembleDebug              # Android (JDK 17 + Andr
 ```
 
 CI builds every artifact and attaches them to GitHub Releases on `v*` tags:
-`NetMonitor-windows-x64.zip`, `app-debug.apk`.
+`NetMonitor-windows-x64.zip`, `net-availability-monitor-android-<tag>.apk`.
 
 ## Verification
 

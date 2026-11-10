@@ -5,70 +5,164 @@
   "description": "Единый файл настроек для macOS-менюбара, Windows-трея, Python-сервера и Android-приложения.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "server", "polling", "incidents", "history", "status_labels", "status_colors", "services", "notifications"],
+  "required": [
+    "version",
+    "server",
+    "polling",
+    "incidents",
+    "history",
+    "status_labels",
+    "status_colors",
+    "services",
+    "notifications"
+  ],
   "properties": {
-    "version": { "type": "integer", "const": 1 },
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
     "server": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["host", "port"],
+      "required": [
+        "host",
+        "port"
+      ],
       "properties": {
-        "host": { "type": "string", "minLength": 1 },
-        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
       }
     },
     "polling": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["interval_sec", "check_timeout_sec", "dns_timeout_sec"],
+      "required": [
+        "interval_sec",
+        "check_timeout_sec",
+        "dns_timeout_sec"
+      ],
       "properties": {
-        "interval_sec": { "type": "integer", "minimum": 5 },
-        "check_timeout_sec": { "type": "integer", "minimum": 1 },
-        "dns_timeout_sec": { "type": "number", "exclusiveMinimum": 0 }
+        "interval_sec": {
+          "type": "integer",
+          "minimum": 5
+        },
+        "check_timeout_sec": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "dns_timeout_sec": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
     "incidents": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["open_after_failures", "close_after_successes", "max_stored"],
+      "required": [
+        "open_after_failures",
+        "close_after_successes",
+        "max_stored"
+      ],
       "properties": {
-        "open_after_failures": { "type": "integer", "minimum": 1 },
-        "close_after_successes": { "type": "integer", "minimum": 1 },
-        "max_stored": { "type": "integer", "minimum": 1 }
+        "open_after_failures": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "close_after_successes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_stored": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "history": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["max_age_hours", "max_points", "series_points"],
+      "required": [
+        "max_age_hours",
+        "max_points",
+        "series_points"
+      ],
       "properties": {
-        "max_age_hours": { "type": "integer", "minimum": 1 },
-        "max_points": { "type": "integer", "minimum": 1 },
-        "series_points": { "type": "integer", "minimum": 1 }
+        "max_age_hours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_points": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "series_points": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "status_labels": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ok", "degraded", "blocked", "down", "unknown"],
+      "required": [
+        "ok",
+        "degraded",
+        "blocked",
+        "down",
+        "unknown"
+      ],
       "properties": {
-        "ok": { "type": "string" },
-        "degraded": { "type": "string" },
-        "blocked": { "type": "string" },
-        "down": { "type": "string" },
-        "unknown": { "type": "string" }
+        "ok": {
+          "type": "string"
+        },
+        "degraded": {
+          "type": "string"
+        },
+        "blocked": {
+          "type": "string"
+        },
+        "down": {
+          "type": "string"
+        },
+        "unknown": {
+          "type": "string"
+        }
       }
     },
     "status_colors": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ok", "degraded", "blocked", "down", "unknown"],
+      "required": [
+        "ok",
+        "degraded",
+        "blocked",
+        "down",
+        "unknown"
+      ],
       "properties": {
-        "ok": { "$ref": "#/definitions/color" },
-        "degraded": { "$ref": "#/definitions/color" },
-        "blocked": { "$ref": "#/definitions/color" },
-        "down": { "$ref": "#/definitions/color" },
-        "unknown": { "$ref": "#/definitions/color" }
+        "ok": {
+          "$ref": "#/definitions/color"
+        },
+        "degraded": {
+          "$ref": "#/definitions/color"
+        },
+        "blocked": {
+          "$ref": "#/definitions/color"
+        },
+        "down": {
+          "$ref": "#/definitions/color"
+        },
+        "unknown": {
+          "$ref": "#/definitions/color"
+        }
       }
     },
     "services": {
@@ -77,22 +171,48 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "subtitle", "icon", "accent", "incident_title", "checks"],
+        "required": [
+          "id",
+          "name",
+          "subtitle",
+          "icon",
+          "accent",
+          "incident_title",
+          "checks"
+        ],
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-          "name": { "type": "string", "minLength": 1 },
-          "subtitle": { "type": "string" },
-          "icon": { "type": "string" },
-          "accent": { "$ref": "#/definitions/color" },
-          "incident_title": { "type": "string" },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "accent": {
+            "$ref": "#/definitions/color"
+          },
+          "incident_title": {
+            "type": "string"
+          },
           "hints": {
             "type": "object",
-            "additionalProperties": { "type": "string" }
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "checks": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "#/definitions/check" }
+            "items": {
+              "$ref": "#/definitions/check"
+            }
           }
         }
       }
@@ -105,18 +225,43 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mode": { "type": "string", "enum": ["overlay", "dot", "text"] },
-            "overlay_window_pt": { "type": "number", "exclusiveMinimum": 0 },
-            "overlay_dot_pt": { "type": "number", "exclusiveMinimum": 0 },
-            "status_item_pt": { "type": "number", "exclusiveMinimum": 0 }
+            "mode": {
+              "type": "string",
+              "enum": [
+                "overlay",
+                "dot",
+                "text"
+              ]
+            },
+            "overlay_window_pt": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "overlay_dot_pt": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "status_item_pt": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
           }
         },
         "windows_tray": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mode": { "type": "string", "enum": ["tray"] },
-            "dot_pt": { "type": "integer", "minimum": 8, "maximum": 64 }
+            "mode": {
+              "type": "string",
+              "enum": [
+                "tray"
+              ]
+            },
+            "dot_pt": {
+              "type": "integer",
+              "minimum": 8,
+              "maximum": 64
+            }
           }
         }
       }
@@ -129,10 +274,21 @@
           "type": "object",
           "additionalProperties": true,
           "properties": {
-            "enabled": { "type": "boolean" },
+            "enabled": {
+              "type": "boolean"
+            },
             "notify_on": {
               "type": "array",
-              "items": { "type": "string", "enum": ["ok", "degraded", "blocked", "down", "unknown"] }
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "degraded",
+                  "blocked",
+                  "down",
+                  "unknown"
+                ]
+              }
             }
           }
         },
@@ -140,41 +296,123 @@
           "type": "object",
           "additionalProperties": true,
           "properties": {
-            "enabled": { "type": "boolean" },
+            "enabled": {
+              "type": "boolean"
+            },
             "notify_on": {
               "type": "array",
-              "items": { "type": "string", "enum": ["ok", "degraded", "blocked", "down", "unknown"] }
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "degraded",
+                  "blocked",
+                  "down",
+                  "unknown"
+                ]
+              }
             },
-            "foreground_service": { "type": "boolean" },
-            "sound": { "type": "boolean" },
-            "vibrate": { "type": "boolean" }
+            "foreground_service": {
+              "type": "boolean"
+            },
+            "sound": {
+              "type": "boolean"
+            },
+            "vibrate": {
+              "type": "boolean"
+            }
           }
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slow_latency_ms": {
+          "type": "number",
+          "minimum": 1000,
+          "description": "Порог «медленно» для статуса degraded (по умолчанию 4000 мс); сейчас читается Python-сервером, Android/Windows используют 4000 мс."
         }
       }
     }
   },
   "definitions": {
-    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
     "check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label", "kind", "host", "port", "core", "timeout"],
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "host",
+        "port",
+        "core",
+        "timeout"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-        "label": { "type": "string", "minLength": 1 },
-        "kind": { "type": "string", "enum": ["dns", "tcp", "tls", "https"] },
-        "host": { "type": "string", "minLength": 1 },
-        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-        "path": { "type": "string" },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "dns",
+            "tcp",
+            "tls",
+            "https"
+          ]
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "path": {
+          "type": "string"
+        },
         "expect": {
           "type": "array",
-          "items": { "type": "integer", "minimum": 100, "maximum": 599 }
+          "items": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
+          }
         },
-        "core": { "type": "boolean" },
-        "timeout": { "type": "number", "exclusiveMinimum": 0 }
+        "core": {
+          "type": "boolean"
+        },
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       },
-      "if": { "properties": { "kind": { "const": "https" } } },
-      "then": { "required": ["path", "expect"] }
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "https"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "path",
+          "expect"
+        ]
+      }
     }
   }
 }

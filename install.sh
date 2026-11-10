@@ -23,6 +23,18 @@ MENUBAR_LABEL="local.netmon.menubar"
 UID_NUM="$(id -u)"
 PYTHON_BIN="$(command -v python3 || true)"
 
+SERVER_PORT="$(python3 - "$PROJECT_DIR/config.json" <<'PY'
+import json, sys
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        port = json.load(handle).get("server", {}).get("port", 8099)
+    print(int(port) if isinstance(port, int) and 1 <= port <= 65535 else 8099)
+except Exception:
+    print(8099)
+PY
+)"
+
+
 info() { printf '  %s\n' "$*"; }
 
 uninstall() {
@@ -31,7 +43,7 @@ uninstall() {
     launchctl bootout "gui/$UID_NUM/$MENUBAR_LABEL" 2>/dev/null || true
     rm -f "$AGENTS_DIR/$SERVER_LABEL.plist" "$AGENTS_DIR/$MENUBAR_LABEL.plist"
     pkill -f "NetBar.app/Contents/MacOS/NetBar" 2>/dev/null || true
-    PID="$(lsof -nP -iTCP:8099 -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
+    PID="$(lsof -nP -iTCP:$SERVER_PORT -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
     if [ -n "$PID" ]; then kill "$PID" 2>/dev/null || true; fi
     echo "Готово: автозапуск и процессы остановлены."
     echo "Данные и установленная копия остались здесь: $RUNTIME_DIR"
@@ -80,7 +92,7 @@ mkdir -p "$HOME/Applications" "$AGENTS_DIR" "$LOGS_DIR" "$RUNTIME_DIR/data"
 launchctl bootout "gui/$UID_NUM/$SERVER_LABEL" 2>/dev/null || true
 launchctl bootout "gui/$UID_NUM/$MENUBAR_LABEL" 2>/dev/null || true
 pkill -f "NetBar.app/Contents/MacOS/NetBar" 2>/dev/null || true
-OLD_PID="$(lsof -nP -iTCP:8099 -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
+OLD_PID="$(lsof -nP -iTCP:$SERVER_PORT -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
 if [ -n "$OLD_PID" ]; then
     info "останавливаю ручной экземпляр сервера (pid $OLD_PID)"
     kill "$OLD_PID" 2>/dev/null || true
@@ -115,7 +127,7 @@ cat > "$AGENTS_DIR/$SERVER_LABEL.plist" <<PLIST
         <string>-B</string>
         <string>server.py</string>
         <string>--port</string>
-        <string>8099</string>
+        <string>$SERVER_PORT</string>
     </array>
     <key>WorkingDirectory</key><string>$RUNTIME_DIR</string>
     <key>RunAtLoad</key><true/>
@@ -165,18 +177,35 @@ PLIST
 plutil -lint "$AGENTS_DIR/$SERVER_LABEL.plist" >/dev/null
 plutil -lint "$AGENTS_DIR/$MENUBAR_LABEL.plist" >/dev/null
 
-# 7. Загрузить агенты.
-launchctl bootstrap "gui/$UID_NUM" "$AGENTS_DIR/$SERVER_LABEL.plist"
-launchctl enable "gui/$UID_NUM/$SERVER_LABEL" 2>/dev/null || true
-launchctl bootstrap "gui/$UID_NUM" "$AGENTS_DIR/$MENUBAR_LABEL.plist"
-launchctl enable "gui/$UID_NUM/$MENUBAR_LABEL" 2>/dev/null || true
+# 7. Загрузить агенты. Если launchd недоступен из текущего окружения (например,
+#    установка идёт из песочницы/агента), процессы поднимаются вручную, а
+#    автозапуск включится при следующем входе — plist-файлы уже лежат на месте.
+SERVER_AGENT=0
+MENUBAR_AGENT=0
+if launchctl bootstrap "gui/$UID_NUM" "$AGENTS_DIR/$SERVER_LABEL.plist" 2>/dev/null; then
+    SERVER_AGENT=1
+    launchctl enable "gui/$UID_NUM/$SERVER_LABEL" 2>/dev/null || true
+fi
+if launchctl bootstrap "gui/$UID_NUM" "$AGENTS_DIR/$MENUBAR_LABEL.plist" 2>/dev/null; then
+    MENUBAR_AGENT=1
+    launchctl enable "gui/$UID_NUM/$MENUBAR_LABEL" 2>/dev/null || true
+fi
+if [ "$SERVER_AGENT" -eq 0 ]; then
+    info "launchd недоступен — запускаю сервер вручную (автозапуск включится при следующем входе)"
+    ( cd "$RUNTIME_DIR" && nohup "$PYTHON_BIN" -B server.py --port "$SERVER_PORT" \
+        >> "$LOGS_DIR/netmon-server.log" 2>&1 & )
+fi
+if [ "$MENUBAR_AGENT" -eq 0 ]; then
+    info "launchd недоступен — запускаю индикатор вручную"
+    open "$APP_DST" >/dev/null 2>&1 || true
+fi
 
 # 8. Дождаться ответа сервера и показать сводку.
 echo -n "  жду первый цикл проверок"
 STATUS=""
 for _ in $(seq 1 30); do
     sleep 1
-    STATUS="$(curl -s --max-time 2 http://127.0.0.1:8099/api/health 2>/dev/null || true)"
+    STATUS="$(curl -s --max-time 2 http://127.0.0.1:$SERVER_PORT/api/health 2>/dev/null || true)"
     if [ -n "$STATUS" ]; then break; fi
     echo -n "."
 done
@@ -188,12 +217,12 @@ if [ -z "$STATUS" ]; then
 fi
 
 echo "Готово."
-info "API:        http://127.0.0.1:8099/api/health → $STATUS"
-info "агенты:     $(launchctl list | grep -E 'local\.netmon\.' | tr '\n' ' ')"
+info "API:        http://127.0.0.1:$SERVER_PORT/api/health → $STATUS"
+info "агенты:     $(launchctl list | grep -E 'local\.netmon\.' | tr '\n' ' ' || true)"
 info "индикатор:  $(pgrep -fl 'NetBar.app/Contents/MacOS/NetBar' | head -1 || echo 'не запущен')"
 info "Логи:       $LOGS_DIR/netmon-server.log, $LOGS_DIR/netmon-menubar.err.log, /tmp/netmon-menubar.log"
 echo
 echo "Управление:"
-echo "  открыть дашборд:    open http://127.0.0.1:8099/"
+echo "  открыть дашборд:    open http://127.0.0.1:$SERVER_PORT/"
 echo "  удалить автозапуск: $PROJECT_DIR/install.sh --uninstall"
 echo "  обновить код после правок: $PROJECT_DIR/install.sh"
