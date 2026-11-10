@@ -215,6 +215,17 @@ jobs:
           Get-Content "dist\SHA256SUMS.txt"
           Get-ChildItem dist | Format-Table Name, Length
 
+      - name: Package portable artifact (push/PR)
+        if: steps.channel.outputs.release != 'true'
+        shell: pwsh
+        run: |
+          $stage = "dist\NetMonitor-windows-x64"
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item "dist\NetMonitor.exe" $stage
+          Copy-Item "config.json" (Join-Path $stage "config.json.example")
+          Copy-Item "docs\windows.md" (Join-Path $stage "README.md")
+
       - name: Upload build artifact (push/PR)
         if: steps.channel.outputs.release != 'true'
         uses: actions/upload-artifact@v4
