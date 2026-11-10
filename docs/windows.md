@@ -381,3 +381,43 @@ powershell -ExecutionPolicy Bypass -File .\windows\uninstall.ps1 -PurgeData
   их скрывать).
 - История и инциденты хранятся в `data/state.json` рядом с exe; при
   `-PurgeData` или переустановке в другой каталог они не переносятся.
+
+---
+
+## Установщик (Inno Setup)
+
+Релизы содержат `NetMonitor-Setup-x64.exe` — per-user установщик без прав администратора:
+
+- ставит приложение в `%LOCALAPPDATA%\net-availability-monitor`;
+- создаёт ярлыки в меню «Пуск» (опционально — на рабочем столе);
+- по желанию включает автозапуск (HKCU `Run`);
+- регистрирует деинсталлятор в «Установка и удаление программ»;
+- рядом кладёт `config.json.example`, `README.md` и публичный сертификат подписи.
+
+Портативный вариант — `NetMonitor-windows-x64.zip` (запуск без установки). Оба варианта
+собираются в CI (`windows/installer.iss`, `ISCC.exe`).
+
+## Подпись и SmartScreen
+
+`.exe` и установщик подписываются Authenticode-сертификатом в CI. Сертификат
+**самоподписанный** (`windows/netmon-code-signing.cer`, прикладывается к релизу), поэтому
+SmartScreen предупреждает до первого доверия. Проверка подписи:
+
+```powershell
+Get-AuthenticodeSignature .\NetMonitor.exe | Format-List Status, SignerCertificate
+Get-AuthenticodeSignature .\NetMonitor-Setup-x64.exe | Format-List Status, SignerCertificate
+```
+
+Если хотите убрать предупреждение для этого издателя:
+
+```powershell
+Import-Certificate -FilePath .\netmon-code-signing.cer -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+Секреты CI: `WINDOWS_PFX_BASE64` (base64 от `.pfx`) и `WINDOWS_PFX_PASSWORD`. Без них
+push/PR-сборки собираются неподписанными; релизные теги требуют валидную подпись.
+
+## Nightly
+
+Каждую ночь workflow `Windows build` (cron `0 2 * * *`) публикует prerelease с тегом
+`nightly`; вручную — Actions → Windows build → Run workflow → *nightly*.

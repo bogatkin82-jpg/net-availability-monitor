@@ -6,7 +6,7 @@
 отличить «сервис недоступен» от «трафик фильтруется/блокируется», пока контрольный
 канал подтверждает, что интернет в целом работает.
 
-[English version](README.md)
+[English version](README.md) — английский README основной.
 
 [![CI](https://github.com/bogatkin82-jpg/net-availability-monitor/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -57,20 +57,54 @@ open http://127.0.0.1:8099/
 
 ## Windows
 
-Скачайте `NetMonitor-windows-x64.zip` из последнего Release, распакуйте и запустите
-`install.ps1` (PowerShell) или `NetMonitor.exe`. Приложение поднимает локальный сервер,
-показывает точку в трее и открывает дашборд по клику. Автозапуск — одна запись в HKCU `Run`;
-`uninstall.ps1` всё убирает. Подробности — в [docs/windows.md](docs/windows.md),
-включая предупреждение SmartScreen (сборка без подписи).
+**Рекомендуется:** скачать `NetMonitor-Setup-x64.exe` из последнего Release и запустить —
+установщик Inno Setup на пользователя (без прав администратора, ярлыки в меню «Пуск»,
+опциональный автозапуск, деинсталлятор). Портативный вариант — `NetMonitor-windows-x64.zip`
+с подписанным `NetMonitor.exe`, `config.json.example` и инструкцией.
+
+Приложение поднимает локальный сервер, показывает точку в трее и открывает дашборд по клику.
+`.exe` и установщик подписаны Authenticode **самоподписанным** сертификатом, поэтому SmartScreen
+может предупреждать, пока вы не добавите сертификат в доверенные (`netmon-code-signing.cer`
+прикладывается к релизу; как проверить подпись — в [docs/windows.md](docs/windows.md)).
 
 ## Android
 
-Установите APK (`net-availability-monitor-android-<тег>.apk`) из последнего Release (разрешите установку из неизвестных
-источников), откройте приложение и выдайте разрешение на уведомления. Телефон проверяет
-сервисы сам — компьютер не нужен. Foreground-service продолжает опрос в фоне и уведомляет,
-когда YouTube/Telegram становятся заблокированными или недоступными. Настройки (интервал,
-пороги, включённые сервисы, уведомления) меняются в приложении, по умолчанию берутся из
-`config.json`. Подробности — в [docs/android.md](docs/android.md).
+Установите подписанный release-APK `net-availability-monitor-android-<тег>.apk` из последнего
+Release (разрешите установку из неизвестных источников), откройте приложение и выдайте
+разрешение на уведомления. APK подписан релизным ключом проекта, SHA-256 сертификата —
+`d368e63e3d0ea1bf7b5b0807f1244acee54595bf9f507b5ae2017b47633f4831`. `*.aab` — та же сборка
+для публикации в Google Play.
+
+Телефон проверяет сервисы сам — компьютер не нужен. Foreground-service продолжает опрос в фоне
+и уведомляет, когда YouTube/Telegram становятся заблокированными или недоступными. Настройки
+(интервал, пороги, включённые сервисы, уведомления) меняются в приложении, по умолчанию берутся
+из `config.json`. Подробности — в [docs/android.md](docs/android.md).
+
+## Подпись релизов
+
+- **Android:** APK/AAB подписываются релизным keystore проекта (RSA-4096, 10 000 дней).
+  Ключ и пароли — в GitHub Actions secrets; CI проверяет подпись через `apksigner` перед
+  публикацией.
+- **Windows:** `NetMonitor.exe` и установщик подписываются Authenticode в CI самоподписанным
+  сертификатом (secrets `WINDOWS_PFX_BASE64`, `WINDOWS_PFX_PASSWORD`). Публичный сертификат
+  [`windows/netmon-code-signing.cer`](windows/netmon-code-signing.cer) прикладывается к релизу.
+  Проверка на Windows:
+
+  ```powershell
+  Get-AuthenticodeSignature .\NetMonitor.exe | Format-List Status, SignerCertificate
+  Import-Certificate -FilePath .\netmon-code-signing.cer -CertStoreLocation Cert:\CurrentUser\Root
+  ```
+
+  PR-сборки без секретов остаются неподписанными; при запросе подписи CI падает, если её нет.
+- **Контрольные суммы:** в каждом релизе есть `SHA256SUMS.txt` для Windows-артефактов; SHA-256
+  Android-сборки указан в release notes.
+
+## Nightly-сборки
+
+Каждую ночь GitHub Actions собирает `main` в prerelease с тегом
+[`nightly`](https://github.com/bogatkin82-jpg/net-availability-monitor/releases/tag/nightly):
+подписанные Windows `.exe`, установщик, `SHA256SUMS.txt`, подписанные Android APK и AAB.
+Можно запустить вручную: Actions → Android APK / Windows build → Run workflow → *nightly*.
 
 ## Настройки
 

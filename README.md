@@ -6,7 +6,7 @@ menu-bar/tray indicators and an Android app. Each check is split into stages
 “the connection is being filtered/blocked” (timeouts, resets, DNS failures) while the
 control channel proves the internet itself is working.
 
-[Русская версия](README.ru.md)
+English is the primary README. Русская версия — [README.ru.md](README.ru.md).
 
 [![CI](https://github.com/bogatkin82-jpg/net-availability-monitor/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -57,20 +57,60 @@ Left click opens the status menu, right click opens the dashboard, dragging move
 
 ## Windows
 
-Download `NetMonitor-windows-x64.zip` from the latest Release, unzip, run
-`install.ps1` (PowerShell) or `NetMonitor.exe`. The app starts the local server, shows a
-tray dot and opens the dashboard on demand. Autostart is a single HKCU `Run` entry; run
-`uninstall.ps1` to remove it. See [docs/windows.md](docs/windows.md) for details,
-including the SmartScreen note (the build is unsigned).
+**Recommended:** download `NetMonitor-Setup-x64.exe` from the latest Release and run it —
+a per-user Inno Setup installer (no admin rights, Start Menu shortcuts, optional autostart,
+uninstaller). Portable alternative: `NetMonitor-windows-x64.zip` with `NetMonitor.exe`
+(signed), `config.json.example` and this guide.
+
+The app starts the local server, shows a tray dot and opens the dashboard on demand.
+The `.exe` and installer are Authenticode-signed with a **self-signed** certificate, so
+SmartScreen may still warn until you trust the certificate (`netmon-code-signing.cer` is
+attached to the release; see [docs/windows.md](docs/windows.md) for how to verify the
+signature and add the certificate to Trusted Root).
 
 ## Android
 
-Install the APK (`net-availability-monitor-android-<tag>.apk`) from the latest Release (allow installation from unknown sources),
-open the app and grant the notification permission. The phone performs checks itself —
-no PC required. A foreground service keeps polling in the background and notifies you when
-YouTube/Telegram become blocked or unreachable. Settings (interval, thresholds, enabled
-services, notifications) are editable in the app and default to `config.json`.
-See [docs/android.md](docs/android.md).
+Install the signed release APK `net-availability-monitor-android-<tag>.apk` from the latest
+Release (allow installation from unknown sources), open the app and grant the notification
+permission. The APK is signed with the project release key; its certificate SHA-256 is
+`d368e63e3d0ea1bf7b5b0807f1244acee54595bf9f507b5ae2017b47633f4831`. `*.aab` is the same build
+for releasing through Google Play.
+
+The phone performs checks itself — no PC required. A foreground service keeps polling in the
+background and notifies you when YouTube/Telegram become blocked or unreachable. Settings
+(interval, thresholds, enabled services, notifications) are editable in the app and default to
+`config.json`. See [docs/android.md](docs/android.md).
+
+## Signed builds
+
+- **Android:** the release APK/AAB is signed by the project release keystore (RSA-4096,
+  10 000 days). The keystore and passwords live in GitHub Actions secrets
+  (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+  `ANDROID_KEY_PASSWORD`); CI verifies the signature with `apksigner` before publishing.
+  `*.aab` is signed with the same key.
+- **Windows:** `NetMonitor.exe` and the Inno Setup installer are Authenticode-signed in CI
+  with a self-signed code-signing certificate (`WINDOWS_PFX_BASE64`,
+  `WINDOWS_PFX_PASSWORD` secrets). The public certificate
+  [`windows/netmon-code-signing.cer`](windows/netmon-code-signing.cer) is attached to every
+  release. Verify on Windows:
+
+  ```powershell
+  Get-AuthenticodeSignature .\NetMonitor.exe | Format-List Status, SignerCertificate
+  # add the certificate to Trusted Root to silence SmartScreen for this publisher:
+  Import-Certificate -FilePath .\netmon-code-signing.cer -CertStoreLocation Cert:\CurrentUser\Root
+  ```
+
+  CI fails if signing is requested but the signature is missing; PR builds without secrets
+  are unsigned.
+- **Checksums:** every release contains `SHA256SUMS.txt` for the Windows artifacts; Android
+  release SHA-256 is printed in the release notes.
+
+## Nightly builds
+
+Every night GitHub Actions builds `main` into a prerelease tagged
+[`nightly`](https://github.com/bogatkin82-jpg/net-availability-monitor/releases/tag/nightly):
+signed Windows `.exe`, installer, `SHA256SUMS.txt`, signed Android APK and AAB. You can also
+trigger it manually (Actions → Android APK / Windows build → Run workflow → *nightly*).
 
 ## Configuration
 

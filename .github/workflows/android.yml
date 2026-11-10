@@ -6,6 +6,13 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: "Опубликовать как nightly"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "15 2 * * *"
 
 permissions:
   contents: write
@@ -21,6 +28,12 @@ jobs:
     defaults:
       run:
         working-directory: android
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,20 +66,78 @@ jobs:
       - name: Unit tests
         run: ./gradlew --no-daemon test
 
-      - name: Assemble debug APK
+      - name: Determine release channel
+        id: channel
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.nightly }}" == "true" ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=nightly" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare release keystore
+        if: steps.channel.outputs.release == 'true'
+        shell: bash
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is missing"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/netmon-release.jks"
+          test -s "$RUNNER_TEMP/netmon-release.jks"
+
+      - name: Build signed release APK + AAB
+        if: steps.channel.outputs.release == 'true'
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/netmon-release.jks
+        run: ./gradlew --no-daemon assembleRelease bundleRelease
+
+      - name: Verify APK signature
+        if: steps.channel.outputs.release == 'true'
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | tee /tmp/apksigner.txt
+          grep -q "CN=net-availability-monitor" /tmp/apksigner.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+
+      - name: Build debug APK (pushes/PRs)
+        if: steps.channel.outputs.release != 'true'
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Verify config.json is embedded in APK
+      - name: Stage release assets
+        if: steps.channel.outputs.release == 'true'
         run: |
-          unzip -p app/build/outputs/apk/debug/app-debug.apk assets/config.json > /tmp/apk-config.json
-          diff -u ../config.json /tmp/apk-config.json
-          echo "assets/config.json совпадает с корневым config.json"
+          TAG="${{ steps.channel.outputs.tag }}"
+          cp app/build/outputs/apk/release/app-release.apk \
+             "$GITHUB_WORKSPACE/net-availability-monitor-android-${TAG}.apk"
+          cp app/build/outputs/bundle/release/app-release.aab \
+             "$GITHUB_WORKSPACE/net-availability-monitor-android-${TAG}.aab"
+          ls -la "$GITHUB_WORKSPACE"/net-availability-monitor-android-*
 
-      - name: Upload APK
+      - name: Upload debug APK artifact
+        if: steps.channel.outputs.release != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: net-availability-monitor-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload signed release artifact
+        if: steps.channel.outputs.release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: net-availability-monitor-android-release
+          path: |
+            net-availability-monitor-android-*.apk
+            net-availability-monitor-android-*.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -79,28 +150,15 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  release:
-    name: Attach APK to release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download APK
-        uses: actions/download-artifact@v4
-        with:
-          name: net-availability-monitor-android-debug
-          path: dist
-
-      - name: Rename APK with version
-        run: |
-          cd dist
-          mv app-debug.apk "net-availability-monitor-android-${GITHUB_REF_NAME}.apk"
-          ls -l
-
-      - name: Create GitHub Release
+      - name: Publish GitHub Release (tag or nightly)
+        if: steps.channel.outputs.release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
-          files: dist/*.apk
+          tag_name: ${{ steps.channel.outputs.tag }}
+          name: ${{ steps.channel.outputs.tag == 'nightly' && 'Nightly build' || steps.channel.outputs.tag }}
+          prerelease: ${{ steps.channel.outputs.prerelease == 'true' }}
           generate_release_notes: true
+          files: |
+            net-availability-monitor-android-*.apk
+            net-availability-monitor-android-*.aab
           fail_on_unmatched_files: true

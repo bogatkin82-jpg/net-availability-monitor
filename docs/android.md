@@ -169,3 +169,30 @@ android/
 Корневой `config.json` — единственный источник настроек: правишь его и
 пересобираешь (`./gradlew assembleDebug`) — новые сервисы/эндпоинты/таймауты
 попадут в APK без правок Kotlin-кода.
+
+---
+
+## Release-подпись
+
+Release APK/AAB подписываются релизным keystore проекта (RSA-4096, срок 10 000 дней).
+В CI keystore раскладывается из секретов:
+
+- `ANDROID_KEYSTORE_BASE64` — base64 от `.jks`;
+- `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+Перед публикацией CI проверяет подпись (`apksigner verify --print-certs`) и падает, если
+сертификат не `CN=net-availability-monitor`. SHA-256 сертификата:
+`d368e63e3d0ea1bf7b5b0807f1244acee54595bf9f507b5ae2017b47633f4831`.
+
+Локальная подписанная сборка:
+
+```bash
+export ANDROID_KEYSTORE_PATH=/path/to/netmon-release.jks \
+       ANDROID_KEYSTORE_PASSWORD=... ANDROID_KEY_ALIAS=netmon ANDROID_KEY_PASSWORD=...
+./gradlew assembleRelease bundleRelease
+```
+
+## Nightly
+
+Каждую ночь workflow `Android APK` (cron `15 2 * * *`) публикует prerelease с тегом
+`nightly` (APK + AAB). Вручную — Actions → Android APK → Run workflow → *nightly*.

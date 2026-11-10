@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0] — 2026-11-10
+
+### Добавлено
+
+- **Подпись релизов**: Android APK/AAB подписываются release-keystore (ключ и пароли — в GitHub Secrets),
+  Windows `.exe` и установщик подписываются Authenticode-сертификатом (self-signed, публичный `.cer`
+  прикладывается к релизу). Включена проверка подписи в CI.
+- **Установщик Windows**: Inno Setup `NetMonitor-Setup-x64.exe` (per-user, ярлыки, опциональный автозапуск,
+  деинсталлятор).
+- **Nightly-сборки**: ежедневные prerelease-сборки Windows и Android с тегом `nightly`.
+- `SHA256SUMS.txt` в релизе; сертификат подписи Windows в релизе.
+- README переведён на английский как основной; русская версия — `README.ru.md`.
+
+### Изменено
+
+- Версия 1.1.0 (server.py, Android versionCode 2/versionName 1.1.0, установщик).
+
 ## [1.0.0] — 2026-11-10
 
 Первый публичный релиз.

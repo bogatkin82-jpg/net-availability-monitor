@@ -1312,7 +1312,10 @@ def test_no_secrets_or_private_keys_in_sources():
         re.compile(r"AKIA[0-9A-Z]{16}"),
         re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}"),
     ]
-    skip_dirs = {".git", ".toolchain", ".deploy", ".gradle-cache", "build",
+    # Локальные секреты и тулчейны лежат в gitignored-каталогах и не коммитятся;
+    # тест проверяет именно исходники репозитория.
+    skip_dirs = {".git", ".toolchain", ".deploy", ".secrets", ".tools", ".gh-config",
+                 ".venv", ".venv39", ".cache", ".kotlin", ".gradle-cache", "build",
                  "data", "__pycache__", "artifacts", "NetBar.app", ".build"}
     skip_ext = {".png", ".ico", ".jar", ".apk", ".aab", ".zip", ".log", ".pyc",
                 ".swiftmodule", ".o"}
