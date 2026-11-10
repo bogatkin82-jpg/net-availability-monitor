@@ -90,7 +90,7 @@ jobs:
       - name: Run unit tests
         working-directory: ios
         run: |
-          UDID="$(xcrun simctl list devices available | sed -n 's/.*iPhone[^(]*(\\([0-9A-Fa-f-]*\\)).*/\1/p' | head -1)"
+          UDID="$(xcrun simctl list devices available | awk '/iPhone/ { gsub(/[()]/, ""); for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-Fa-f-]{36}$/) { print $i; exit } }')"
           if [ -z "$UDID" ]; then
             echo "::error::no available iPhone simulator"
             exit 1
