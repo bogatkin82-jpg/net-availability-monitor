@@ -44,7 +44,7 @@ class MonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         controller = (application as NetMonApp).container.controller
-        notifications = Notifications(this)
+        notifications = Notifications(this, (application as NetMonApp).container.config)
         isRunning = true
     }
 

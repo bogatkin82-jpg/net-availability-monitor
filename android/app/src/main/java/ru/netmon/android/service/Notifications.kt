@@ -1,6 +1,7 @@
 package ru.netmon.android.service
 
 import android.app.Notification
+import android.graphics.Color
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -9,6 +10,7 @@ import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
 import ru.netmon.android.MainActivity
 import ru.netmon.android.R
+import ru.netmon.core.AppConfig
 import ru.netmon.core.Snapshot
 import ru.netmon.core.Status
 
@@ -16,7 +18,7 @@ import ru.netmon.core.Status
  * Уведомления: постоянное уведомление foreground-сервиса («Мониторинг сети»)
  * и оповещения при переходе сервиса в blocked/down (notify_on из config.json).
  */
-class Notifications(private val context: Context) {
+class Notifications(private val context: Context, private val config: AppConfig) {
 
     private val manager: NotificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -91,20 +93,43 @@ class Notifications(private val context: Context) {
         )
     }
 
-    /** Постоянное уведомление со сводкой статусов. */
+    /** Иконка статуса для строки состояния (система делает её монохромной). */
+    private fun statusIcon(status: Status): Int = when (status) {
+        Status.OK -> R.drawable.ic_stat_ok
+        Status.DEGRADED -> R.drawable.ic_stat_degraded
+        Status.BLOCKED -> R.drawable.ic_stat_blocked
+        Status.DOWN -> R.drawable.ic_stat_down
+        Status.UNKNOWN -> R.drawable.ic_stat_unknown
+    }
+
+    /** Акцентный цвет уведомления в шторке (в строке состояния цвет недоступен). */
+    private fun statusColor(status: Status): Int {
+        val hex = config.colorFor(status.id)
+        return try {
+            Color.parseColor(hex)
+        } catch (exc: IllegalArgumentException) {
+            Color.GRAY
+        }
+    }
+
+    /** Постоянное уведомление со сводкой статусов и иконкой-индикатором. */
     fun statusNotification(snapshot: Snapshot): Notification {
         val lines = snapshot.services.joinToString(" · ") { service ->
             "${service.name}: ${service.statusLabel}"
         }
+        val overall = snapshot.summary.overall
         val title = "Мониторинг сети · ${snapshot.summary.overallLabel}"
-        return Notification.Builder(context, CHANNEL_STATUS)
-            .setSmallIcon(R.drawable.ic_stat_network)
+        val builder = Notification.Builder(context, CHANNEL_STATUS)
+            .setSmallIcon(statusIcon(overall))
+            .setColor(statusColor(overall))
             .setContentTitle(title)
             .setContentText(lines.ifEmpty { "Проверки ещё не выполнялись" })
             .setStyle(Notification.BigTextStyle().bigText(lines))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(true)
+            .setCategory(Notification.CATEGORY_STATUS)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(contentIntent())
             .addAction(
                 Notification.Action.Builder(
@@ -120,7 +145,10 @@ class Notifications(private val context: Context) {
                     serviceIntent(MonitorService.ACTION_STOP, REQ_STOP),
                 ).build(),
             )
-            .build()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+        }
+        return builder.build()
     }
 
     /** Оповещение о переходе сервиса в blocked/down. */

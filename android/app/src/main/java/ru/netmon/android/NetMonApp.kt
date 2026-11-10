@@ -12,7 +12,7 @@ class AppContainer(context: Context) {
 
     val config: AppConfig = ConfigRepository(applicationContext).load()
     private val settingsRepository = SettingsRepository(applicationContext, config)
-    val notifications: Notifications = Notifications(applicationContext)
+    val notifications: Notifications = Notifications(applicationContext, config)
     val controller: MonitorController = MonitorController(
         context = applicationContext,
         config = config,

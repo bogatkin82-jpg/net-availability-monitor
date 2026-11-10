@@ -228,14 +228,15 @@ fun SettingsScreen(
             Text("Фоновый мониторинг", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Постоянное уведомление «Мониторинг сети» и проверки по расписанию " +
-                    "в foreground-сервисе (интервал не чаще ${UserSettings.MIN_INTERVAL_SEC} с).",
+                text = "Постоянная иконка статуса в строке состояния (рядом с часами) и проверки " +
+                    "по расписанию в foreground-сервисе. Цвет виден в шторке; сама иконка " +
+                    "монохромная и меняет форму: ● всё ок, ◐ нестабильно, ⊘ блокировка, ✕ нет связи.",
                 color = TextMuted,
                 style = MaterialTheme.typography.labelSmall,
             )
             SwitchRow(
-                label = "Foreground service",
-                caption = "запускать при сохранении настроек",
+                label = "Индикатор статуса в строке состояния",
+                caption = "запускать при сохранении настроек и при открытии приложения",
                 checked = draft.foregroundService,
             ) { draft = draft.copy(foregroundService = it) }
             Spacer(Modifier.height(8.dp))
