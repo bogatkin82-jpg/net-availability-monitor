@@ -172,6 +172,11 @@ curl -s 'http://127.0.0.1:8099/api/incidents?q=таймаут&service=telegram&s
 |---|---|---|---|
 | [overlay](docs/screenshots/overlay.png) | [menubar](docs/screenshots/menubar.png) | [desktop](docs/screenshots/desktop.png) | [mobile](docs/screenshots/mobile.png) |
 
+Android-приложение на реальном устройстве (BKQ-AN90, Android API 37):
+[экран статуса](docs/screenshots/android.png) · [журнал](docs/screenshots/android-journal.png) —
+16/16 проверок, YouTube доступен.
+
+
 ## Структура репозитория
 
 ```

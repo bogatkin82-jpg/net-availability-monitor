@@ -196,3 +196,13 @@ export ANDROID_KEYSTORE_PATH=/path/to/netmon-release.jks \
 
 Каждую ночь workflow `Android APK` (cron `15 2 * * *`) публикует prerelease с тегом
 `nightly` (APK + AAB). Вручную — Actions → Android APK → Run workflow → *nightly*.
+
+
+## Проверено на реальном устройстве
+
+- Устройство: **BKQ-AN90**, Android API 37 (Android 16), установка через `adb install`.
+- Установлен подписанный release-APK v1.1.0 (versionCode 2); подпись установленного пакета
+  совпадает с релизной (SHA-256 `d368e63e…33f4831`).
+- Статус: 3/3 сервиса, 16/16 проверок, YouTube доступен, uptime 100% — см.
+  [`docs/screenshots/android.png`](../docs/screenshots/android.png).
+- Крашей в logcat нет.
