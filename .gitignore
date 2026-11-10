@@ -10,8 +10,9 @@ desktop.ini
 __pycache__/
 *.py[cod]
 *.egg-info/
-.venv/
+.venv*/
 venv/
+.pytest_cache/
 build/
 dist/
 *.spec.bak
