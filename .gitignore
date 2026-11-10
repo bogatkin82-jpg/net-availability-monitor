@@ -20,6 +20,8 @@ dist/
 # Локальные данные и секреты
 data/
 .deploy/
+.tools/
+.gh-config/
 .toolchain/
 .gradle-cache/
 .build/

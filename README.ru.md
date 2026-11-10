@@ -8,7 +8,7 @@
 
 [English version](README.md)
 
-[![CI](https://github.com/net-availability-monitor/net-availability-monitor/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/bogatkin82-jpg/net-availability-monitor/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ![Дашборд](docs/screenshots/desktop.png)
@@ -37,7 +37,7 @@
 ## Быстрый старт на macOS
 
 ```bash
-git clone https://github.com/net-availability-monitor/net-availability-monitor.git
+git clone https://github.com/bogatkin82-jpg/net-availability-monitor.git
 cd net-availability-monitor
 ./install.sh
 open http://127.0.0.1:8099/
