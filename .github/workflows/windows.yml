@@ -210,7 +210,8 @@ jobs:
             $hash = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower()
             "$hash  $(Split-Path $f -Leaf)"
           }
-          $lines | Set-Content -Encoding ascii "dist\SHA256SUMS.txt"
+          # LF-окончания: файл должен проверяться и в PowerShell, и в shasum -c
+          ($lines -join "`n") + "`n" | Set-Content -Encoding ascii -NoNewline "dist\SHA256SUMS.txt"
           Get-Content "dist\SHA256SUMS.txt"
           Get-ChildItem dist | Format-Table Name, Length
 
