@@ -39,6 +39,25 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 VERSION = "1.0.0"
+
+
+def _configure_utf8_stdio():
+    """Принудительно UTF-8 для stdout/stderr.
+
+    На Windows консоль/pipe по умолчанию cp1252: русский текст в print()
+    падает с UnicodeEncodeError (а широкий except в selftest глушил вывод).
+    """
+    for name in ("stdout", "stderr"):
+        stream = getattr(sys, name, None)
+        if stream is None or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 - в windowed-сборке поток может быть None
+            pass
+
+
+_configure_utf8_stdio()
 # Каталог с кодом и ресурсами. В сборке PyInstaller onefile __file__ указывает
 # внутрь временного каталога sys._MEIPASS, где лежат данные бандла (static/, config.json).
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

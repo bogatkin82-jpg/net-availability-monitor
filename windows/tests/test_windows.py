@@ -93,6 +93,8 @@ def subprocess_env():
     env = dict(os.environ)
     env.pop("NETMON_CONFIG", None)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
     return env
 
 
@@ -303,7 +305,7 @@ class ServerCliTests(TempDirTestCase):
         command = [PYTHON, "-B", SERVER_PY, "--config", config_path,
                    "--check-config"] + list(extra)
         return subprocess.run(command, cwd=ROOT, env=subprocess_env(),
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
 
     def test_bad_json_exit_code_2(self):
         path = os.path.join(self.tmpdir, "bad.json")
@@ -456,7 +458,7 @@ class TraySelftestCliTests(TempDirTestCase):
         path = self.write_config(minimal_config(port=port))
         result = subprocess.run(
             [PYTHON, "-B", TRAY_PY, "--selftest", "--config", path],
-            cwd=ROOT, env=subprocess_env(), capture_output=True, text=True, timeout=60)
+            cwd=ROOT, env=subprocess_env(), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("РЕЗУЛЬТАТ: OK", result.stdout)
         self.assertIn("сервер недоступен", result.stdout.lower())
@@ -469,7 +471,7 @@ class TraySelftestCliTests(TempDirTestCase):
         path = self.write_config(config)
         result = subprocess.run(
             [PYTHON, "-B", TRAY_PY, "--selftest", "--config", path],
-            cwd=ROOT, env=subprocess_env(), capture_output=True, text=True, timeout=60)
+            cwd=ROOT, env=subprocess_env(), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
         self.assertIn("Ошибка конфигурации", result.stderr)
 
@@ -478,7 +480,7 @@ class TraySelftestCliTests(TempDirTestCase):
         path = self.write_config(minimal_config(port=port))
         result = subprocess.run(
             [PYTHON, "-B", ENTRY_PY, "--selftest", "--config", path],
-            cwd=ROOT, env=subprocess_env(), capture_output=True, text=True, timeout=60)
+            cwd=ROOT, env=subprocess_env(), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("самопроверка сборки", result.stdout)
         self.assertIn("static/", result.stdout)
