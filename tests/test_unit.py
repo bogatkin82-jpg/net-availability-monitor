@@ -1076,9 +1076,14 @@ def test_netbar_reads_display_settings_from_config():
     # режимы, которые понимает конфиг
     for mode in ("overlay", "dot", "text"):
         assert '"%s"' % mode in swift
-    # индикатор опрашивает контрактный API, а не произвольный URL
-    assert "/api/state" in swift
-    assert "/api/check" in swift
+    # порт/подписи/цвета берутся из того же config.json (паритет с десктопом)
+    for key in ("server", "status_labels", "status_colors"):
+        assert 'root["%s"]' % key in swift, \
+            "NetBar.swift не читает config.json → %s" % (key,)
+    # индикатор опрашивает контрактный API (URL может собираться через
+    # appendingPathComponent, поэтому проверяем путь без ведущего слэша)
+    assert "api/state" in swift
+    assert "api/check" in swift
 
 
 def test_netbar_has_no_hardcoded_service_endpoints():

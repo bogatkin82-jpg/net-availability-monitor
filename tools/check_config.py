@@ -143,6 +143,14 @@ def check_config(config):
             require(isinstance(windows["dot_pt"], int) and 8 <= windows["dot_pt"] <= 64,
                     "display.windows_tray.dot_pt должен быть 8..64")
 
+    classification = config.get("classification") or {}
+    if classification:
+        require(isinstance(classification, dict), "classification должен быть объектом")
+        slow = classification.get("slow_latency_ms")
+        if slow is not None:
+            require(isinstance(slow, (int, float)) and 100 <= slow <= 600000,
+                    "classification.slow_latency_ms должен быть числом 100..600000")
+
     notifications = config.get("notifications") or {}
     require(isinstance(notifications, dict) and notifications, "notifications обязателен")
     for platform in ("windows", "android"):

@@ -210,7 +210,7 @@ func fetchStateSynchronously() -> [String: Any]? {
 
 func dumpStatus() -> Int32 {
     guard let state = fetchStateSynchronously() else {
-        print("MONITOR UNAVAILABLE: http://127.0.0.1:8099/api/state недоступен")
+        print("MONITOR UNAVAILABLE: \(monitorStateURL.absoluteString) недоступен")
         return 2
     }
     let summary = state["summary"] as? [String: Any] ?? [:]
@@ -658,7 +658,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if !serverAvailable || lastState == nil {
             addDisabled("Монитор не отвечает")
-            addDisabled("http://127.0.0.1:8099", small: true)
+            addDisabled(serverBaseURL.absoluteString, small: true)
             menu.addItem(NSMenuItem.separator())
             _ = addAction("Запустить сервер мониторинга", #selector(startServer))
         } else {

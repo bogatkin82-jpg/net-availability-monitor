@@ -8,9 +8,8 @@
 |---|---|
 | Python-сервер (macOS/Linux/Windows) | `--config PATH`, env `NETMON_CONFIG`, `config.json` рядом со `server.py`/`.exe`, иначе встроенные дефолты |
 | Windows-трей / `.exe` | тот же `config.json`; PyInstaller кладёт копию рядом с exe/внутрь бандла |
-| macOS-менюбар | читает `server.port`, `display.macos_menubar.*`, `status_labels`, `status_colors` из рантайм-копии `config.json` |
+| macOS-менюбар | путь к рантайму (`NETMON_DIR`/`~/.netmon-dir`); читает `server.port`, `display.macos_menubar.*`, `status_labels`, `status_colors` из рантайм-копии `config.json`, статусы получает из `/api/state` |
 | Android | Gradle-таск копирует корневой `config.json` в `app/src/main/assets/config.json` перед сборкой |
-| macOS-менюбар | путь к рантайму (`NETMON_DIR`) и режим `display.macos_menubar.mode`; данные о статусах берёт из `/api/state` |
 
 Что задаётся конфигом:
 
@@ -29,7 +28,7 @@
 диапазоны, цвета, коды HTTP и паритет Android-ассета с корневым конфигом.
 Схема для редакторов: [`docs/config.schema.json`](config.schema.json). Python-сервер дополнительно
 понимает необязательный `classification.slow_latency_ms` (порог «медленно», по умолчанию 4000 мс);
-Windows и Android используют те же 4000 мс.
+Windows запускает тот же `server.py` и параметр уважает; Android пока использует фиксированные 4000 мс.
 
 ## Общая логика проверок
 

@@ -331,8 +331,9 @@
       "properties": {
         "slow_latency_ms": {
           "type": "number",
-          "minimum": 1000,
-          "description": "Порог «медленно» для статуса degraded (по умолчанию 4000 мс); сейчас читается Python-сервером, Android/Windows используют 4000 мс."
+          "minimum": 100,
+          "description": "Порог «медленно» для статуса degraded (по умолчанию 4000 мс); Python-сервер (и Windows, который его запускает) читает параметр, Android пока использует фиксированные 4000 мс.",
+          "maximum": 600000
         }
       }
     }
