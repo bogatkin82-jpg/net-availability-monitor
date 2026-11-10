@@ -9,6 +9,7 @@ control channel proves the internet itself is working.
 English is the primary README. Русская версия — [README.ru.md](README.ru.md).
 
 [![CI](https://github.com/bogatkin82-jpg/net-availability-monitor/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![iOS build](https://github.com/bogatkin82-jpg/net-availability-monitor/actions/workflows/ios.yml/badge.svg)](../../actions/workflows/ios.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ![Dashboard](docs/screenshots/desktop.png)
