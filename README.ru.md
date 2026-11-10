@@ -29,6 +29,7 @@
 | **macOS** | Python-сервер + дашборд в браузере + нативная точка в меню-баре (Swift/AppKit), автозапуск через LaunchAgents | `./install.sh` |
 | **Windows** | Python-сервер + дашборд + точка в системном трее, один `.exe` (PyInstaller), автозапуск через HKCU Run | `NetMonitor-windows-x64.zip` из Releases |
 | **Android** | Нативное приложение Kotlin/Compose со своими проверками, журналом, настройками и уведомлениями | `net-availability-monitor-android-<тег>.apk` из Releases |
+| **iPhone (iOS 17+)** | Нативное SwiftUI-приложение со своими постадийными проверками, журналом, настройками и локальными уведомлениями | Xcode-проект в [`ios/`](ios/); сборка в Xcode или GitHub Actions (без подписи — установка на устройство/TestFlight требует Apple Developer Account) |
 | **Linux** | Python-сервер + дашборд (трей опционально, `tray.py`) | `python3 server.py` |
 
 Все платформы используют общий [`config.json`](config.json): сервисы, эндпоинты, таймауты,

@@ -1,0 +1,99 @@
+# XcodeGen-спецификация iOS-приложения NetMonitor.
+#
+# Генерация проекта:  xcodegen generate   (из каталога ios/)
+# Результат:          ios/NetMon.xcodeproj
+#
+# Требования: Xcode 16 (iOS 17 SDK), XcodeGen >= 2.38.
+# Внешних SPM-пакетов нет — только системные Foundation/SwiftUI/Network/UserNotifications.
+
+name: NetMon
+
+options:
+  minimumXcodeGenVersion: "2.38.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "17.0"
+
+settings:
+  base:
+    # Языковая версия Swift 5 (компилятор Xcode 16 — Swift 6, режим совместимости 5).
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    # Проверки конкурентности — мягкие: код использует async/await и NWConnection,
+    # но не претендует на полную Sendable-чистоту сторонних API.
+    SWIFT_STRICT_CONCURRENCY: minimal
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    CLANG_ENABLE_MODULES: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+
+targets:
+  NetMon:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Sources
+      # config.json и Assets.xcassets попадают в Copy Bundle Resources.
+      - path: Resources
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.netmon.ios
+        PRODUCT_NAME: NetMon
+        MARKETING_VERSION: "1.3.0"
+        CURRENT_PROJECT_VERSION: "3"
+        # iPhone-only портретное приложение.
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_PREVIEWS: YES
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      # XcodeGen генерирует Info.plist по списку properties (файл также
+      # закоммичен как fallback — содержимое совпадает).
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: NetMonitor
+        CFBundleName: NetMonitor
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleDevelopmentRegion: ru
+        CFBundleLocalizations:
+          - ru
+          - en
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSupportsIndirectInputEvents: true
+        UIRequiresFullScreen: false
+        ITSAppUsesNonExemptEncryption: false
+        NSUserNotificationsUsageDescription: "NetMonitor присылает уведомления, когда YouTube, Telegram или интернет становятся недоступны."
+    scheme:
+      # Схема NetMon: сборка приложения + unit-тесты NetMonTests.
+      testTargets:
+        - NetMonTests
+      gatherCoverageData: true
+      coverageTargets:
+        - NetMon
+
+  NetMonTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - target: NetMon
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.netmon.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # Hosted unit-тесты: тестовый бандл грузится в приложение, поэтому
+        # Bundle.main внутри тестов — бандл NetMon.app (нужен для config.json).
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/NetMon.app/NetMon"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        SWIFT_VERSION: "5.0"

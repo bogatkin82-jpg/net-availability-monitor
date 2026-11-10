@@ -18,6 +18,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(ROOT, "config.json")
 ANDROID_ASSET = os.path.join(ROOT, "android", "app", "src", "main", "assets", "config.json")
+IOS_ASSET = os.path.join(ROOT, "ios", "Resources", "config.json")
 
 STATUSES = ("ok", "degraded", "blocked", "down", "unknown")
 KINDS = ("dns", "tcp", "tls", "https")
@@ -198,6 +199,30 @@ def check_android_parity(config):
     return "ok"
 
 
+def check_ios_parity(config):
+    if not os.path.isfile(IOS_ASSET):
+        return "skip"  # iOS ещё не добавлен
+    try:
+        with open(IOS_ASSET, "r", encoding="utf-8") as handle:
+            asset = json.load(handle)
+    except (OSError, ValueError) as exc:
+        fail("не могу прочитать ios/Resources/config.json: %s" % exc)
+    if canonical(asset) != canonical(config):
+        fail("ios/Resources/config.json отличается от корневого config.json "
+             "(запустите: python3 tools/check_config.py --sync)")
+    return "ok"
+
+
+def sync_ios_asset(config):
+    if not os.path.isdir(os.path.dirname(IOS_ASSET)):
+        return False
+    os.makedirs(os.path.dirname(IOS_ASSET), exist_ok=True)
+    with open(IOS_ASSET, "w", encoding="utf-8") as handle:
+        json.dump(config, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    return True
+
+
 def sync_android_asset(config):
     if not os.path.isdir(os.path.dirname(ANDROID_ASSET)):
         return False
@@ -225,7 +250,14 @@ def main(argv):
             else:
                 if not quiet:
                     print("android-проект ещё не создан — синхронизировать нечего")
+            if sync_ios_asset(config):
+                if not quiet:
+                    print("ios/Resources/config.json обновлён из корневого конфига")
+            else:
+                if not quiet:
+                    print("ios-проект ещё не создан — синхронизировать нечего")
         parity = check_android_parity(config)
+        ios_parity = check_ios_parity(config)
     except ConfigError as exc:
         print("ОШИБКА КОНФИГА: %s" % exc, file=sys.stderr)
         return 1
@@ -237,6 +269,7 @@ def main(argv):
         print("config.json: OK — %d сервисов, %d проверок, порт %d, интервал %d c" % (
             summary["services"], summary["checks"], summary["port"], summary["interval"]))
         print("android assets: %s" % ("OK" if parity == "ok" else "пропущено (нет android проекта)"))
+        print("ios assets: %s" % ("OK" if ios_parity == "ok" else "пропущено (нет ios проекта)"))
     return 0
 
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0] — 2026-11-10
+
+### Добавлено
+
+- **iOS-приложение (iPhone, iOS 17+)**: нативное SwiftUI-приложение с теми же
+  постадийными проверками DNS → TCP → TLS → HTTP, классификацией
+  `ok/degraded/blocked/down/unknown`, журналом инцидентов, настройками и локальными
+  уведомлениями. Единый `config.json` (копия в `ios/Resources/`, паритет проверяется
+  `tools/check_config.py`), XcodeGen-проект, XCTest-тесты, сборка в GitHub Actions
+  на macOS-раннере (`iOS build`).
+- iOS: сборка для симулятора без подписи в артефактах и nightly-релизе; инструкция
+  по подписи/TestFlight — `docs/ios.md` (нужен Apple Developer Account).
+
+
 ## [1.2.0] — 2026-11-10
 
 ### Добавлено

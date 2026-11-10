@@ -56,3 +56,10 @@ android/captures/
 # Временные файлы тестов
 tests/artifacts/
 /tmp/
+
+# iOS
+ios/.build/
+ios/build/
+ios/DerivedData/
+ios/NetMon.xcodeproj/
+ios/*.xcworkspace/

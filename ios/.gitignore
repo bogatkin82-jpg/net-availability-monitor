@@ -1,0 +1,10 @@
+# Генерируется XcodeGen из project.yml — в git не храним.
+NetMon.xcodeproj/
+# Артефакты сборки (в т.ч. module cache локальных проверок).
+build/
+.build/
+DerivedData/
+*.xcresult
+# Info.plist генерируется XcodeGen; в репозитории лежит fallback-копия,
+# поэтому файл не игнорируется.
+.DS_Store

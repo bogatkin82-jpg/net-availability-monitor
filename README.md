@@ -20,7 +20,7 @@ English is the primary README. Русская версия — [README.ru.md](RE
 - shows the failing stage and reason (e.g. “TLS handshake timed out — looks like DPI filtering”);
 - keeps history, computes 1 h / 24 h uptime and opens **incidents** after 2 failed polls;
 - provides a searchable incident log and JSON export;
-- runs on macOS, Windows and Android, all driven by one `config.json`.
+- runs on macOS, Windows, Android and iPhone (iOS), all driven by one `config.json`.
 
 ## Platforms
 
@@ -29,6 +29,7 @@ English is the primary README. Русская версия — [README.ru.md](RE
 | **macOS** | Python server + browser dashboard + native menu-bar dot (Swift/AppKit), autostart via LaunchAgents | `./install.sh` |
 | **Windows** | Python server + dashboard + system-tray dot, single `.exe` (PyInstaller), autostart via HKCU Run | `NetMonitor-windows-x64.zip` from Releases |
 | **Android** | Native Kotlin/Compose app with its own checks, incident log, settings and notifications | `net-availability-monitor-android-<tag>.apk` from Releases |
+| **iPhone (iOS 17+)** | Native SwiftUI app with its own staged checks, incident log, settings and local notifications | Xcode project in [`ios/`](ios/); build in Xcode or via GitHub Actions (unsigned simulator build; device/TestFlight install requires an Apple Developer account) |
 | **Linux** | Python server + dashboard (tray optional, `tray.py`) | `python3 server.py` |
 
 All platforms share the same [`config.json`](config.json): services, endpoints, timeouts,

@@ -1,0 +1,141 @@
+name: iOS build
+
+# Приложение для iPhone (SwiftUI) собирается на macOS-раннере с Xcode.
+# Подписи/TestFlight здесь нет: для установки на устройство нужен Apple Developer
+# Account (см. docs/ios.md). В релиз кладётся simulator-сборка без подписи.
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+    paths:
+      - "ios/**"
+      - "config.json"
+      - "tools/check_config.py"
+      - "docs/ios.md"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - "config.json"
+      - "tools/check_config.py"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: "Опубликовать как nightly"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "30 2 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build iOS app
+    runs-on: macos-15
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes | head -10
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Determine release channel
+        id: channel
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.nightly }}" == "true" ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=nightly" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build for iOS Simulator
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project NetMon.xcodeproj \
+            -scheme NetMon \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Run unit tests
+        working-directory: ios
+        run: |
+          UDID="$(xcrun simctl list devices available | sed -n 's/.*iPhone[^(]*(\\([0-9A-Fa-f-]*\\)).*/\1/p' | head -1)"
+          if [ -z "$UDID" ]; then
+            echo "::error::no available iPhone simulator"
+            exit 1
+          fi
+          echo "simulator: $UDID"
+          xcodebuild test \
+            -project NetMon.xcodeproj \
+            -scheme NetMon \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package simulator app
+        run: |
+          APP="ios/build/Build/Products/Debug-iphonesimulator/NetMon.app"
+          test -d "$APP" || { echo "::error::NetMon.app not found"; exit 1; }
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent "$APP" dist/NetMonitor-ios-simulator.zip
+          ls -la dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetMon-ios-simulator
+          path: dist/NetMon-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-report
+          path: ios/build/Logs/Test
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish GitHub Release (tag or nightly)
+        if: steps.channel.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.channel.outputs.tag }}
+          name: ${{ steps.channel.outputs.tag == 'nightly' && 'Nightly build' || steps.channel.outputs.tag }}
+          prerelease: ${{ steps.channel.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            dist/NetMonitor-ios-simulator.zip
+          fail_on_unmatched_files: true
