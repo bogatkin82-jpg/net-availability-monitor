@@ -97,7 +97,8 @@ final class ClassifierTests: XCTestCase {
     }
 
     func testTlsResetIsBlocked() {
-        let info = classify(makeChecks("telegram", coreOk: false, error: ErrorCodes.tlsReset))
+        let info = classify(makeChecks("telegram", coreOk: false, error: ErrorCodes.tlsReset),
+                            serviceId: "telegram")
         XCTAssertEqual(info.status, .blocked)
         XCTAssertTrue(info.reason.contains("фильтрацию"), "причина: \(info.reason)")
         XCTAssertEqual(info.hint, TestFixtures.service(config, "telegram").hints["blocked"])

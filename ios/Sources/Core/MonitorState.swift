@@ -57,7 +57,7 @@ struct Streak: Codable, Sendable, Equatable {
 }
 
 /// Последний результат сервиса (аналог `last_results` в server.py).
-struct ServiceResultData: Sendable, Equatable {
+struct ServiceResultData: Sendable, Equatable, Codable {
     var status: Status
     var label: String
     var reason: String
@@ -137,6 +137,9 @@ struct StatePersistence: Codable, Sendable {
     var version: Int
     var rounds: Int
     var lastRoundEpoch: Date?
+    /// Последние результаты проверок: после перезапуска показываем последний
+    /// известный статус, пока не завершится первый новый раунд.
+    var lastResults: [String: ServiceResultData]?
 }
 
 // MARK: - MonitorState
@@ -536,7 +539,7 @@ final class MonitorState {
     var persistence: StatePersistence {
         StatePersistence(series: series, incidents: incidents, events: events,
                          streaks: streaks, version: version, rounds: rounds,
-                         lastRoundEpoch: lastRoundEpoch)
+                         lastRoundEpoch: lastRoundEpoch, lastResults: lastResults)
     }
 
     func restore(_ state: StatePersistence) {
@@ -547,6 +550,7 @@ final class MonitorState {
         version = state.version
         rounds = state.rounds
         lastRoundEpoch = state.lastRoundEpoch
+        lastResults = state.lastResults ?? [:]
         bootstrap()
     }
 
