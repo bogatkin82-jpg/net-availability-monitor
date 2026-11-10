@@ -1,0 +1,140 @@
+name: Windows build
+
+# Сборка NetMonitor.exe (PyInstaller onefile) на windows-latest:
+#   1) py_compile server.py/tray.py/windows/entry.py;
+#   2) генерация windows/icon.ico и сборка по windows/netmon.spec;
+#   3) NetMonitor.exe --selftest (без GUI и сети, должен вернуть 0);
+#   4) smoke-тест сервера внутри exe: --server-only + /api/health и /api/state;
+#   5) артефакт NetMonitor-windows-x64 (exe + config.json.example + README);
+#   6) на тег v* — публикация NetMonitor-windows-x64.zip в GitHub Release.
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+    paths:
+      - "server.py"
+      - "tray.py"
+      - "windows/**"
+      - "config.json"
+      - "static/**"
+      - "docs/windows.md"
+      - ".github/workflows/windows.yml"
+  pull_request:
+    paths:
+      - "server.py"
+      - "tray.py"
+      - "windows/**"
+      - "config.json"
+      - "static/**"
+      - ".github/workflows/windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build NetMonitor.exe
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: python -m pip install --upgrade pip pyinstaller pystray pillow
+
+      - name: Syntax check
+        run: python -m py_compile server.py tray.py windows/entry.py
+
+      - name: Unit tests (Windows layer)
+        run: python windows/tests/test_windows.py
+
+      - name: Generate icon
+        run: python windows/make_icon.py
+
+      - name: Build NetMonitor.exe
+        run: python -m PyInstaller --noconfirm --clean --log-level=WARN windows/netmon.spec
+
+      - name: Selftest exe (no GUI, no network)
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath "dist\NetMonitor.exe" -ArgumentList "--selftest" -Wait -PassThru
+          $logPath = Join-Path $env:LOCALAPPDATA "net-availability-monitor\logs\netmon.log"
+          if (Test-Path $logPath) { Get-Content -Path $logPath -Tail 120 }
+          Write-Host "selftest exit code: $($process.ExitCode)"
+          if ($process.ExitCode -ne 0) {
+            throw "NetMonitor.exe --selftest завершился с кодом $($process.ExitCode)"
+          }
+
+      - name: Server smoke test (exe --server-only)
+        shell: pwsh
+        run: |
+          $dataDir = Join-Path $env:RUNNER_TEMP "netmon-ci-data"
+          $process = Start-Process -FilePath "dist\NetMonitor.exe" -ArgumentList @(
+            "--server-only", "--port", "18099", "--interval", "60", "--data-dir", $dataDir
+          ) -PassThru
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Milliseconds 500
+              try {
+                $health = Invoke-RestMethod -Uri "http://127.0.0.1:18099/api/health" -TimeoutSec 2
+                if ($health.ok) { $ready = $true; break }
+              } catch { }
+            }
+            if (-not $ready) { throw "сервер не ответил на /api/health за 30 с" }
+
+            $state = Invoke-RestMethod -Uri "http://127.0.0.1:18099/api/state" -TimeoutSec 15
+            Write-Host "poll_interval=$($state.poll_interval) services=$($state.services.Count) overall=$($state.summary.overall)"
+            if ($state.poll_interval -ne 60) { throw "CLI --interval не применился: $($state.poll_interval)" }
+            if ($state.services.Count -lt 1) { throw "в /api/state нет сервисов" }
+
+            $page = Invoke-WebRequest -Uri "http://127.0.0.1:18099/" -TimeoutSec 10 -UseBasicParsing
+            if ($page.StatusCode -ne 200 -or $page.Content -notmatch "Мониторинг доступности") {
+              throw "дашборд не отдаётся из статики внутри exe"
+            }
+            Write-Host "smoke test: OK"
+          } finally {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 500
+          }
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          $stage = "dist\NetMonitor-windows-x64"
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item "dist\NetMonitor.exe" $stage
+          Copy-Item "config.json" (Join-Path $stage "config.json.example")
+          Copy-Item "docs\windows.md" (Join-Path $stage "README.md")
+          Compress-Archive -Path (Join-Path $stage "*") -DestinationPath "dist\NetMonitor-windows-x64.zip" -Force
+          Get-Item "dist\NetMonitor-windows-x64.zip" | Format-List Name, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetMonitor-windows-x64
+          path: dist/NetMonitor-windows-x64
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release (tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/NetMonitor-windows-x64.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true

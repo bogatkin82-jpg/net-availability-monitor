@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0e13">
+  <meta name="description" content="Локальный дашборд доступности YouTube, Telegram и контрольного интернет-канала: статусы, задержки, постадийные проверки DNS/TCP/TLS/HTTP и журнал сбоев с поиском.">
+  <title>Мониторинг доступности</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.6 12h4.1l2-5.6 3.6 11.2 2.4-5.6h6.7"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1 class="brand-title">Мониторинг доступности</h1>
+          <p class="brand-sub">YouTube и Telegram из вашей сети</p>
+        </div>
+      </div>
+
+      <div class="topbar-side">
+        <div class="overall-chip status-unknown" id="overall-chip" title="Общий статус сервисов">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="overall-text">Нет данных</span>
+        </div>
+
+        <div class="live" id="live">
+          <div class="live-line">
+            <span class="live-dot live-unknown" id="live-dot" aria-hidden="true"></span>
+            <span class="live-text" id="live-text">обновлено —</span>
+          </div>
+          <div class="live-sub" id="next-check">подключение…</div>
+        </div>
+
+        <div class="topbar-actions">
+          <label class="switch" title="Автоматически обновлять данные каждые 3 секунды">
+            <input type="checkbox" id="auto-toggle" class="switch-input" checked>
+            <span class="switch-ui" aria-hidden="true"><span class="switch-thumb"></span></span>
+            <span class="switch-text">Авто</span>
+          </label>
+
+          <button type="button" class="btn btn-primary" id="btn-check">
+            <span class="spinner" id="check-spinner" hidden aria-hidden="true"></span>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 3.5V8h-4.5"/>
+            </svg>
+            <span id="check-label">Проверить сейчас</span>
+          </button>
+
+          <a class="btn btn-ghost" id="btn-export" href="/api/export?format=json" download>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 17v2.5h15V17"/>
+            </svg>
+            <span>Экспорт</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell main" id="main" tabindex="-1">
+    <div class="banner" id="banner" hidden>
+      <span class="banner-icon" id="banner-icon" aria-hidden="true"></span>
+      <div class="banner-body">
+        <p class="banner-title" id="banner-title"></p>
+        <p class="banner-sub" id="banner-sub"></p>
+      </div>
+    </div>
+
+    <section class="kpi" aria-label="Сводные показатели">
+      <div class="kpi-card">
+        <span class="kpi-label">Сервисов</span>
+        <span class="kpi-value" id="kpi-total">—</span>
+        <span class="kpi-sub" id="kpi-total-sub">в мониторинге</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Доступно</span>
+        <span class="kpi-value" id="kpi-ok">—</span>
+        <span class="kpi-sub" id="kpi-ok-sub">—</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">С проблемами</span>
+        <span class="kpi-value" id="kpi-affected">—</span>
+        <span class="kpi-sub" id="kpi-affected-sub">деградация или блокировка</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Активных сбоев</span>
+        <span class="kpi-value" id="kpi-incidents">—</span>
+        <span class="kpi-sub" id="kpi-incidents-sub">прямо сейчас</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Средний отклик</span>
+        <span class="kpi-value" id="kpi-latency">—</span>
+        <span class="kpi-sub" id="kpi-latency-sub">по всем проверкам</span>
+      </div>
+    </section>
+
+    <section class="services-section" aria-labelledby="services-title">
+      <div class="section-head">
+        <h2 class="section-title" id="services-title">Сервисы</h2>
+        <p class="section-note" id="services-note">—</p>
+      </div>
+      <div class="services" id="services"></div>
+      <div class="services-empty" id="services-empty" hidden>
+        <p class="empty-title">Нет данных о сервисах</p>
+        <p class="empty-sub">Сервер мониторинга ещё не завершил первый цикл проверок.</p>
+      </div>
+    </section>
+
+    <section class="panel incidents" aria-labelledby="inc-title">
+      <div class="panel-head">
+        <div class="panel-heading">
+          <h2 id="inc-title">Журнал сбоев</h2>
+          <p class="panel-sub" id="inc-meta">Загрузка…</p>
+        </div>
+        <div class="search">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>
+          </svg>
+          <input id="inc-search" type="search" placeholder="Поиск по причине, сервису…" aria-label="Поиск по журналу сбоев" autocomplete="off" spellcheck="false">
+          <button type="button" class="search-clear" id="inc-search-clear" hidden aria-label="Очистить поиск">×</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="chips" role="group" aria-label="Фильтр по сервису">
+          <button type="button" class="chip is-active" data-service="all">Все</button>
+          <button type="button" class="chip" data-service="youtube"><span class="chip-dot" style="--chip:#ff3040"></span>YouTube</button>
+          <button type="button" class="chip" data-service="telegram"><span class="chip-dot" style="--chip:#2ea6e0"></span>Telegram</button>
+          <button type="button" class="chip" data-service="internet"><span class="chip-dot" style="--chip:#38d39f"></span>Интернет</button>
+        </div>
+        <div class="selects">
+          <label class="select">
+            <span class="select-label">Статус</span>
+            <span class="select-wrap">
+              <select id="inc-status">
+                <option value="all">Все</option>
+                <option value="active">Активные</option>
+                <option value="resolved">Завершённые</option>
+              </select>
+              <svg class="select-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+            </span>
+          </label>
+          <label class="select">
+            <span class="select-label">Период</span>
+            <span class="select-wrap">
+              <select id="inc-hours">
+                <option value="0">Все время</option>
+                <option value="1">1 час</option>
+                <option value="24">24 часа</option>
+                <option value="168">7 дней</option>
+              </select>
+              <svg class="select-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="inc-table-wrap">
+        <table class="inc-table" aria-describedby="inc-meta">
+          <thead>
+            <tr>
+              <th scope="col">Статус</th>
+              <th scope="col">Сервис</th>
+              <th scope="col">Начало</th>
+              <th scope="col">Длительность</th>
+              <th scope="col">Причина</th>
+              <th scope="col">Проверки</th>
+            </tr>
+          </thead>
+          <tbody id="inc-tbody"></tbody>
+        </table>
+
+        <div class="empty" id="inc-empty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>
+          </svg>
+          <p class="empty-title" id="inc-empty-title">Сбоев не найдено</p>
+          <p class="empty-sub" id="inc-empty-sub">Попробуйте изменить фильтры или период.</p>
+        </div>
+      </div>
+
+      <div class="panel-foot">
+        <span class="foot-count" id="inc-count">Показано 0 из 0</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="inc-more" hidden>Показать ещё</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell footer">
+    <span>net-monitor · локальный дашборд без внешних зависимостей</span>
+    <span>Обновление каждые 3 с · время Europe/Moscow</span>
+  </footer>
+
+  <div class="sr-only" id="live-status" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

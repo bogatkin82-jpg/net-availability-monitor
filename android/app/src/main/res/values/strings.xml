@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Мониторинг сети</string>
+    <string name="notification_channel_status">Мониторинг сети</string>
+    <string name="notification_channel_status_desc">Постоянное уведомление с текущим статусом проверок</string>
+    <string name="notification_channel_alerts">Оповещения о сбоях</string>
+    <string name="notification_channel_alerts_desc">Уведомления при переходе сервиса в blocked/down</string>
+</resources>

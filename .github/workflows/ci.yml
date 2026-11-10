@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  config:
+    name: Конфиг и гигиена репозитория
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Валидация config.json и паритета с Android
+        run: python3 tools/check_config.py
+      - name: Проверка YAML workflow-файлов
+        run: |
+          python3 - <<'PY'
+          import glob, sys
+          try:
+              import yaml
+          except ImportError:
+              sys.exit("PyYAML не установлен")
+          bad = []
+          for path in glob.glob(".github/workflows/*.yml") + glob.glob(".github/workflows/*.yaml"):
+              try:
+                  yaml.safe_load(open(path, encoding="utf-8"))
+              except Exception as exc:  # noqa: BLE001
+                  bad.append("%s: %s" % (path, exc))
+          if bad:
+              sys.exit("\n".join(bad))
+          print("YAML OK:", len(glob.glob(".github/workflows/*.yml")), "файлов")
+          PY
+      - name: Секреты и артефакты не в git
+        run: |
+          bad=$(git ls-files | grep -E '^(\.deploy/|data/|\.toolchain/|\.gradle|android/\.gradle)' || true)
+          if [ -n "$bad" ]; then
+            echo "В git попали артефакты/секреты:"; echo "$bad"; exit 1
+          fi
+          if git ls-files | grep -Ei '\.(pem|key|keystore|jks)$' | grep -v '\.pub$'; then
+            echo "Найдены приватные ключи в git"; exit 1
+          fi
+          echo "Гигиена git: OK"
+
+  python:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Установка pytest
+        run: python -m pip install --upgrade pip pytest
+      - name: py_compile серверных файлов
+        run: |
+          python -m py_compile server.py
+          if [ -f tray.py ]; then python -m py_compile tray.py; fi
+          if [ -f windows/entry.py ]; then python -m py_compile windows/entry.py; fi
+      - name: Юнит-тесты (без сети)
+        run: |
+          if [ -f tests/test_unit.py ]; then
+            python -m pytest -q tests/test_unit.py
+          else
+            echo "tests/test_unit.py ещё нет — пропуск"
+          fi
+      - name: Проверка config.json на реальных дефолтах
+        run: python3 tools/check_config.py
+
+  macos-menubar:
+    name: macOS menubar (Swift)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Сборка NetBar.swift
+        run: |
+          mkdir -p .build
+          swiftc -swift-version 5 -O \
+            -module-cache-path .build/swift-cache \
+            -framework Cocoa \
+            -o .build/NetBar \
+            menubar/NetBar.swift
+          test -x .build/NetBar
+          echo "Swift build OK"

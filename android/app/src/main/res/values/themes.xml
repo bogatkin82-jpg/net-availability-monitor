@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Тёмная тема дашборда: фон #0a0e13, карточки #111820. -->
+    <style name="Theme.NetMon" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0a0e13</item>
+        <item name="android:statusBarColor">#0a0e13</item>
+        <item name="android:navigationBarColor">#0a0e13</item>
+        <item name="android:colorAccent">#2ea6e0</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

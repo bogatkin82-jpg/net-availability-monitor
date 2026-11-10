@@ -1,0 +1,6 @@
+# Локальные артефакты Android-сборки (в дополнение к корневому .gitignore).
+.gradle/
+.kotlin/
+local.properties
+debug.keystore
+app/build/

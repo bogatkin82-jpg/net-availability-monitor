@@ -1,0 +1,54 @@
+# macOS / Windows / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+*.spec.bak
+
+# Локальные данные и секреты
+data/
+.deploy/
+.toolchain/
+.gradle-cache/
+.build/
+.secrets/
+*.log
+
+# macOS-приложение (собирается локально)
+menubar/NetBar.app/
+menubar/*.swiftmodule
+menubar/*.o
+
+# Windows-сборка
+windows/dist/
+windows/build/
+windows/*.exe
+windows/*.zip
+
+# Android / Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+.gradle/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Временные файлы тестов
+tests/artifacts/
+/tmp/

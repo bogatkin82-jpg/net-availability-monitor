@@ -1,0 +1,265 @@
+{
+  "version": 1,
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8099
+  },
+  "polling": {
+    "interval_sec": 20,
+    "check_timeout_sec": 8,
+    "dns_timeout_sec": 4
+  },
+  "incidents": {
+    "open_after_failures": 2,
+    "close_after_successes": 1,
+    "max_stored": 500
+  },
+  "history": {
+    "max_age_hours": 24,
+    "max_points": 8640,
+    "series_points": 180
+  },
+  "status_labels": {
+    "ok": "Доступен",
+    "degraded": "Нестабильно",
+    "blocked": "Похоже на блокировку",
+    "down": "Недоступен",
+    "unknown": "Нет данных"
+  },
+  "status_colors": {
+    "ok": "#34c759",
+    "degraded": "#ff9500",
+    "blocked": "#ff3b30",
+    "down": "#ff3b30",
+    "unknown": "#8e8e93"
+  },
+  "services": [
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "subtitle": "видеохостинг · youtube.com",
+      "icon": "youtube",
+      "accent": "#ff3040",
+      "incident_title": "YouTube недоступен",
+      "hints": {
+        "degraded": "Часть проверок не проходит — сравните с доступом через VPN",
+        "blocked": "Похоже на блокировку: проверьте доступ через VPN или мобильный интернет",
+        "down": "Сервис не отвечает — проверьте соединение и повторите позже"
+      },
+      "checks": [
+        {
+          "id": "yt_https",
+          "label": "HTTPS /generate_204",
+          "kind": "https",
+          "host": "www.youtube.com",
+          "port": 443,
+          "path": "/generate_204",
+          "expect": [204],
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "yt_img",
+          "label": "HTTPS i.ytimg.com /generate_204",
+          "kind": "https",
+          "host": "i.ytimg.com",
+          "port": 443,
+          "path": "/generate_204",
+          "expect": [204],
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "yt_www",
+          "label": "HTTPS главная страница",
+          "kind": "https",
+          "host": "www.youtube.com",
+          "port": 443,
+          "path": "/",
+          "expect": [200, 301, 302, 303],
+          "core": false,
+          "timeout": 8
+        },
+        {
+          "id": "yt_tcp",
+          "label": "TCP www.youtube.com:443",
+          "kind": "tcp",
+          "host": "www.youtube.com",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        },
+        {
+          "id": "yt_dns",
+          "label": "DNS www.youtube.com",
+          "kind": "dns",
+          "host": "www.youtube.com",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        }
+      ]
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "subtitle": "мессенджер · telegram.org",
+      "icon": "telegram",
+      "accent": "#2ea6e0",
+      "incident_title": "Telegram недоступен",
+      "hints": {
+        "degraded": "Часть проверок не проходит — возможна фильтрация MTProto",
+        "blocked": "TCP/TLS к Telegram не проходит: вероятна блокировка — включите VPN",
+        "down": "Сервис не отвечает — проверьте соединение и повторите позже"
+      },
+      "checks": [
+        {
+          "id": "tg_web",
+          "label": "HTTPS web.telegram.org",
+          "kind": "https",
+          "host": "web.telegram.org",
+          "port": 443,
+          "path": "/",
+          "expect": [200, 301, 302],
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "tg_api",
+          "label": "HTTPS api.telegram.org",
+          "kind": "https",
+          "host": "api.telegram.org",
+          "port": 443,
+          "path": "/",
+          "expect": [200, 301, 302, 400, 404],
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "tg_dc2",
+          "label": "TCP DC2 149.154.167.51:443",
+          "kind": "tcp",
+          "host": "149.154.167.51",
+          "port": 443,
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "tg_dc1",
+          "label": "TCP DC1 149.154.175.50:443",
+          "kind": "tcp",
+          "host": "149.154.175.50",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        },
+        {
+          "id": "tg_dc4",
+          "label": "TCP DC4 149.154.167.91:443",
+          "kind": "tcp",
+          "host": "149.154.167.91",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        },
+        {
+          "id": "tg_dns_api",
+          "label": "DNS api.telegram.org",
+          "kind": "dns",
+          "host": "api.telegram.org",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        },
+        {
+          "id": "tg_dns_web",
+          "label": "DNS web.telegram.org",
+          "kind": "dns",
+          "host": "web.telegram.org",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        }
+      ]
+    },
+    {
+      "id": "internet",
+      "name": "Интернет",
+      "subtitle": "контрольный канал · gstatic / cloudflare",
+      "icon": "globe",
+      "accent": "#38d39f",
+      "incident_title": "Интернет недоступен",
+      "hints": {
+        "degraded": "Канал нестабилен — проверьте Wi-Fi/роутер",
+        "down": "Проверьте Wi-Fi/кабель и роутер: базовые проверки не проходят"
+      },
+      "checks": [
+        {
+          "id": "inet_gstatic",
+          "label": "HTTPS connectivitycheck.gstatic.com",
+          "kind": "https",
+          "host": "connectivitycheck.gstatic.com",
+          "port": 443,
+          "path": "/generate_204",
+          "expect": [204],
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "inet_cloudflare",
+          "label": "HTTPS cloudflare.com/cdn-cgi/trace",
+          "kind": "https",
+          "host": "cloudflare.com",
+          "port": 443,
+          "path": "/cdn-cgi/trace",
+          "expect": [200],
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "inet_tcp",
+          "label": "TCP 1.1.1.1:443",
+          "kind": "tcp",
+          "host": "1.1.1.1",
+          "port": 443,
+          "core": true,
+          "timeout": 8
+        },
+        {
+          "id": "inet_dns",
+          "label": "DNS cloudflare.com",
+          "kind": "dns",
+          "host": "cloudflare.com",
+          "port": 443,
+          "core": false,
+          "timeout": 8
+        }
+      ]
+    }
+  ],
+  "display": {
+    "macos_menubar": {
+      "mode": "overlay",
+      "overlay_window_pt": 24,
+      "overlay_dot_pt": 9.6,
+      "status_item_pt": 22
+    },
+    "windows_tray": {
+      "mode": "tray",
+      "dot_pt": 16
+    }
+  },
+  "notifications": {
+    "windows": {
+      "enabled": true,
+      "notify_on": ["blocked", "down"]
+    },
+    "android": {
+      "enabled": true,
+      "notify_on": ["blocked", "down"],
+      "foreground_service": true,
+      "sound": false,
+      "vibrate": false
+    }
+  }
+}
