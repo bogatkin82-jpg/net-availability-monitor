@@ -83,6 +83,8 @@ class ApiClient(object):
         self.base_url = "http://%s:%d" % (client_host, port)
         self.dashboard_url = self.base_url + "/"
         self.timeout = timeout
+        # Локальный API не должен уходить в системный прокси (Happ и т.п.).
+        self._opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     def _request(self, path, method="GET", timeout=None):
         url = self.base_url + path
@@ -90,7 +92,7 @@ class ApiClient(object):
         request = urllib.request.Request(url, data=data, method=method)
         request.add_header("Accept", "application/json")
         try:
-            with urllib.request.urlopen(request, timeout=timeout or self.timeout) as response:
+            with self._opener.open(request, timeout=timeout or self.timeout) as response:
                 body = response.read()
         except (urllib.error.URLError, OSError, ValueError) as exc:
             raise ApiError("%s" % exc)

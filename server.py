@@ -28,6 +28,7 @@ import queue
 import re
 import signal
 import socket
+import subprocess
 import ssl
 import sys
 import threading
@@ -36,9 +37,9 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlsplit
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 
 def _configure_utf8_stdio():
@@ -111,6 +112,11 @@ ERROR_LABELS = {
     "read_timeout": "Ответ не получен (таймаут)",
     "http_status_unexpected": "Неожиданный HTTP-статус",
     "http_error": "Ошибка HTTP-обмена",
+    "proxy_connect_timeout": "Прокси не отвечает (таймаут)",
+    "proxy_connect_refused": "Прокси отклонил соединение",
+    "proxy_unreachable": "Прокси недоступен",
+    "proxy_tunnel_failed": "Прокси не пропустил соединение",
+    "proxy_protocol_error": "Ошибка протокола прокси",
     "unknown_error": "Неизвестная ошибка",
 }
 
@@ -187,6 +193,7 @@ def _default_config():
         "polling": {"interval_sec": 20, "check_timeout_sec": 8, "dns_timeout_sec": 4},
         "incidents": {"open_after_failures": 2, "close_after_successes": 1, "max_stored": 500},
         "history": {"max_age_hours": 24, "max_points": 8640, "series_points": 180},
+        "network": {"proxy": "direct"},
         "status_labels": dict(DEFAULT_STATUS_LABELS),
         "status_colors": dict(DEFAULT_STATUS_COLORS),
         "services": [
@@ -305,6 +312,7 @@ class Settings(object):
         self.history_max_points = 8640
         self.series_points = 180
         self.slow_latency_ms = 4000
+        self.network_proxy = "direct"
         self.status_labels = dict(DEFAULT_STATUS_LABELS)
         self.status_colors = dict(DEFAULT_STATUS_COLORS)
         self.services = []
@@ -708,6 +716,17 @@ def _normalize_config(raw, settings, source):
         "android": notifications.get("android") or {},
     }
 
+    network = _get_section(raw, "network", errors)
+    proxy_raw = _get_str(network, "proxy", "network", errors, default="direct")
+    proxy_mode = (proxy_raw or "direct").strip()
+    if proxy_mode not in ("direct", "system"):
+        parsed_proxy = urlsplit(proxy_mode)
+        if (parsed_proxy.scheme != "http" or not parsed_proxy.hostname
+                or parsed_proxy.port is None):
+            errors.append("network.proxy: ожидается 'direct', 'system' или "
+                          "http://host:port, получено %r" % (proxy_mode,))
+    settings.network_proxy = proxy_mode
+
     services, hints = _normalize_services(raw, errors, settings.check_timeout)
     settings.services = services
     settings.hints = hints
@@ -793,6 +812,7 @@ def configure(settings):
     global OPEN_AFTER_FAILS, CLOSE_AFTER_OKS, SERIES_MAX_AGE, SERIES_MAX_POINTS
     global SERIES_POINTS, POLL_INTERVAL, CHECK_TIMEOUT, DNS_TIMEOUT
     global SERVER_HOST, SERVER_PORT, INCIDENTS_MAX_STORED, SLOW_LATENCY_MS
+    global NETWORK_PROXY
     global NOTIFICATIONS, DISPLAY, ACTIVE_SETTINGS
 
     SERVICES = settings.services
@@ -812,9 +832,18 @@ def configure(settings):
     SERVER_PORT = settings.port
     INCIDENTS_MAX_STORED = settings.max_incidents
     SLOW_LATENCY_MS = settings.slow_latency_ms
+    NETWORK_PROXY = settings.network_proxy
+    _PROXY_CACHE["until"] = 0.0
     NOTIFICATIONS = settings.notifications
     DISPLAY = settings.display
     ACTIVE_SETTINGS = settings
+
+
+# Режим сетевых проверок: "direct" — напрямую сокетами (по умолчанию),
+# "system" — через системный HTTP-прокси/VPN, "http://host:port" — явный прокси.
+NETWORK_PROXY = "direct"
+_PROXY_CACHE = {"until": 0.0, "url": None}
+_PROXY_WARNED = set()
 
 
 # При импорте модуля действуют встроенные значения (историческое поведение v1).
@@ -905,7 +934,7 @@ class CheckError(Exception):
 
 
 def _mk_result(spec, ok, latency_ms, stage, error=None, error_text=None,
-               http_status=None, ip=None, timings=None):
+               http_status=None, ip=None, timings=None, proxy_used=False):
     return {
         "id": spec["id"],
         "label": spec["label"],
@@ -920,9 +949,175 @@ def _mk_result(spec, ok, latency_ms, stage, error=None, error_text=None,
         "error_text": error_text,
         "http_status": http_status,
         "ip": ip,
+        "proxy_used": bool(proxy_used),
         "timings": timings or {"dns_ms": None, "tcp_ms": None, "tls_ms": None, "http_ms": None},
         "measured_at": iso_now(),
     }
+
+
+def _detect_macos_proxy():
+    """Системный HTTP(S)-прокси macOS через scutil. SOCKS не поддерживается."""
+    try:
+        result = subprocess.run(["scutil", "--proxy"], capture_output=True,
+                                text=True, timeout=2.0)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    text = result.stdout or ""
+    for prefix in ("HTTPS", "HTTP"):
+        enabled = re.search(r"%sEnable\s*:\s*(\d)" % prefix, text)
+        host = re.search(r"%sProxy\s*:\s*(\S+)" % prefix, text)
+        port = re.search(r"%sPort\s*:\s*(\d+)" % prefix, text)
+        if enabled and enabled.group(1) == "1" and host and port:
+            return "http://%s:%s" % (host.group(1), port.group(1))
+    return None
+
+
+def _detect_windows_proxy():
+    r"""Системный прокси Windows из HKCU\...\Internet Settings."""
+    try:
+        import winreg  # noqa: PLC0415 - только на Windows
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            enabled, _ = winreg.QueryValueEx(key, "ProxyEnable")
+            if not enabled:
+                return None
+            server, _ = winreg.QueryValueEx(key, "ProxyServer")
+    except (ImportError, OSError):
+        return None
+    if not server:
+        return None
+    # Формат: "host:port" либо "http=host:port;https=host:port;ftp=..."
+    value = server
+    if "=" in server:
+        value = ""
+        for part in server.split(";"):
+            if "=" not in part:
+                continue
+            scheme, addr = part.split("=", 1)
+            if scheme.lower() in ("http", "https"):
+                value = addr
+                break
+        if not value:
+            return None
+    if "://" not in value:
+        value = "http://" + value
+    return value if _proxy_endpoint(value) else None
+
+
+def _detect_env_proxy():
+    for name in ("https_proxy", "HTTPS_PROXY", "http_proxy", "HTTP_PROXY",
+                 "all_proxy", "ALL_PROXY"):
+        value = os.environ.get(name)
+        if value and value.lower().startswith("http://"):
+            return value
+    return None
+
+
+def detect_system_proxy():
+    """Найти системный HTTP-прокси; None, если его нет или он не поддерживается."""
+    if sys.platform == "darwin":
+        return _detect_macos_proxy()
+    if os.name == "nt":
+        return _detect_windows_proxy()
+    return _detect_env_proxy()
+
+
+def _proxy_endpoint(url):
+    """Разобрать http://host:port в (host, port); None для неподдерживаемых URL."""
+    if not url:
+        return None
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        return None
+    if parsed.scheme != "http" or not parsed.hostname:
+        return None
+    try:
+        port = parsed.port or 8080
+    except ValueError:
+        return None
+    return parsed.hostname, port
+
+
+def effective_proxy_url():
+    """Активный прокси с учётом режима и кэша системного определения (60 с)."""
+    mode = NETWORK_PROXY
+    if mode == "direct":
+        return None
+    if mode != "system":
+        return mode
+    now = time.monotonic()
+    if now < _PROXY_CACHE["until"]:
+        return _PROXY_CACHE["url"]
+    url = detect_system_proxy()
+    _PROXY_CACHE["until"] = now + 60.0
+    _PROXY_CACHE["url"] = url
+    return url
+
+
+def _warn_proxy_once(message):
+    if message in _PROXY_WARNED:
+        return
+    _PROXY_WARNED.add(message)
+    print("[proxy] %s" % message, file=sys.stderr, flush=True)
+
+
+def _open_proxy_tunnel(proxy_url, host, port, timeout):
+    """Открыть HTTP CONNECT-туннель через прокси и вернуть готовый сокет."""
+    endpoint = _proxy_endpoint(proxy_url)
+    if endpoint is None:
+        raise CheckError("proxy_protocol_error", "tcp",
+                         "неподдерживаемый URL прокси: %s" % proxy_url)
+    proxy_host, proxy_port = endpoint
+    tcp_t0 = time.monotonic()
+    try:
+        sock = socket.create_connection((proxy_host, proxy_port), timeout=timeout)
+    except (socket.timeout, TimeoutError):
+        raise CheckError("proxy_connect_timeout", "tcp",
+                         "прокси %s:%d не ответил за %.0f с" % (
+                             proxy_host, proxy_port, timeout))
+    except ConnectionRefusedError:
+        raise CheckError("proxy_connect_refused", "tcp",
+                         "прокси %s:%d отклонил соединение" % (proxy_host, proxy_port))
+    except OSError as exc:
+        raise CheckError("proxy_unreachable", "tcp",
+                         "прокси %s:%d: %s" % (proxy_host, proxy_port, exc))
+    sock.settimeout(max(0.5, timeout))
+    target = "%s:%d" % (host, port)
+    request = ("CONNECT %s HTTP/1.1\r\nHost: %s\r\n"
+               "Proxy-Connection: keep-alive\r\n\r\n" % (target, target))
+    try:
+        sock.sendall(request.encode("ascii", "replace"))
+        buffer = b""
+        while b"\r\n\r\n" not in buffer and len(buffer) < 8192:
+            chunk = sock.recv(1024)
+            if not chunk:
+                break
+            buffer += chunk
+    except (socket.timeout, TimeoutError):
+        sock.close()
+        raise CheckError("proxy_tunnel_failed", "tcp",
+                         "прокси не ответил на CONNECT %s" % target)
+    except OSError as exc:
+        sock.close()
+        raise CheckError("proxy_protocol_error", "tcp", str(exc))
+    if b"\r\n\r\n" not in buffer:
+        sock.close()
+        raise CheckError("proxy_protocol_error", "tcp",
+                         "прокси закрыл соединение без ответа на CONNECT")
+    status_line = buffer.split(b"\r\n", 1)[0].decode("latin-1", "replace")
+    try:
+        status = int(status_line.split()[1])
+    except (IndexError, ValueError):
+        sock.close()
+        raise CheckError("proxy_protocol_error", "tcp",
+                         "не удалось разобрать ответ прокси: %r" % status_line)
+    if status != 200:
+        sock.close()
+        raise CheckError("proxy_tunnel_failed", "tcp",
+                         "прокси отклонил CONNECT %s: HTTP %d" % (target, status))
+    _warn_proxy_once("проверки идут через прокси %s" % proxy_url)
+    return sock
 
 
 def run_check(spec):
@@ -946,24 +1141,42 @@ def run_check(spec):
     def remaining(floor=0.5):
         return max(floor, deadline - time.monotonic())
 
+    proxy_url = effective_proxy_url() if kind != "dns" else None
+    proxy_used = False
+
     try:
         # --- DNS ---------------------------------------------------------
         dns_t0 = time.monotonic()
         try:
             addresses = resolve_host(host, min(DNS_TIMEOUT, remaining()))
+            ip = addresses[0]
         except TimeoutError:
-            raise CheckError("dns_timeout", "dns", "getaddrinfo timeout")
+            if not proxy_url:
+                raise CheckError("dns_timeout", "dns", "getaddrinfo timeout")
+            ip = None
         except socket.gaierror as exc:
-            raise CheckError("dns_error", "dns", str(exc))
+            if not proxy_url:
+                raise CheckError("dns_error", "dns", str(exc))
+            ip = None
         timings["dns_ms"] = int(round((time.monotonic() - dns_t0) * 1000))
-        ip = addresses[0]
         if kind == "dns":
             return _mk_result(spec, True, elapsed_ms(), "ok", ip=ip, timings=dict(timings))
 
         # --- TCP ---------------------------------------------------------
         tcp_t0 = time.monotonic()
         try:
-            sock = socket.create_connection((ip, port), timeout=remaining())
+            if proxy_url:
+                try:
+                    sock = _open_proxy_tunnel(proxy_url, host, port, remaining())
+                    proxy_used = True
+                except CheckError:
+                    if NETWORK_PROXY != "system":
+                        raise
+                    # Системный прокси/VPN мог отключиться — не роняем мониторинг.
+                    _warn_proxy_once("прокси недоступен, проверка напрямую")
+                    sock = socket.create_connection((host, port), timeout=remaining())
+            else:
+                sock = socket.create_connection((ip, port), timeout=remaining())
         except (socket.timeout, TimeoutError):
             raise CheckError("connect_timeout", "tcp",
                              "connect() timeout %.0fs" % timeout)
@@ -973,7 +1186,8 @@ def run_check(spec):
             raise CheckError("connect_unreachable", "tcp", "%s: %s" % (type(exc).__name__, exc))
         timings["tcp_ms"] = int(round((time.monotonic() - tcp_t0) * 1000))
         if kind == "tcp":
-            return _mk_result(spec, True, elapsed_ms(), "ok", ip=ip, timings=dict(timings))
+            return _mk_result(spec, True, elapsed_ms(), "ok", ip=ip,
+                              timings=dict(timings), proxy_used=proxy_used)
 
         # --- TLS ---------------------------------------------------------
         tls_t0 = time.monotonic()
@@ -1000,7 +1214,8 @@ def run_check(spec):
             raise CheckError("tls_error", "tls", str(exc))
         timings["tls_ms"] = int(round((time.monotonic() - tls_t0) * 1000))
         if kind == "tls":
-            return _mk_result(spec, True, elapsed_ms(), "ok", ip=ip, timings=dict(timings))
+            return _mk_result(spec, True, elapsed_ms(), "ok", ip=ip,
+                              timings=dict(timings), proxy_used=proxy_used)
 
         # --- HTTP --------------------------------------------------------
         ssock.settimeout(remaining())
@@ -1036,7 +1251,7 @@ def run_check(spec):
             raise CheckError("http_status_unexpected", "http",
                              "HTTP %s (expected %s)" % (http_status, expect))
         return _mk_result(spec, True, elapsed_ms(), "ok", http_status=http_status,
-                          ip=ip, timings=dict(timings))
+                          ip=ip, timings=dict(timings), proxy_used=proxy_used)
 
     except CheckError as exc:
         return _mk_result(spec, False, elapsed_ms(), exc.stage, exc.code, exc.text,
@@ -1551,6 +1766,11 @@ class Monitor:
                 "next_check_in": round(next_check_in, 1),
                 "checking": self.checking,
                 "internet": internet,
+                "proxy": {
+                    "mode": NETWORK_PROXY,
+                    "active": bool(effective_proxy_url()),
+                    "url": effective_proxy_url(),
+                },
                 "summary": {
                     "overall": overall,
                     "overall_label": overall_labels[overall],
@@ -1791,6 +2011,10 @@ def main(argv=None):
                              "минимум 5)")
     parser.add_argument("--data-dir", default=None,
                         help="каталог для state.json (по умолчанию ./data рядом с приложением)")
+    parser.add_argument("--proxy", default=None,
+                        choices=("direct", "system"),
+                        help="проверки напрямую (direct) или через системный прокси/VPN "
+                             "(system); по умолчанию из config.json network.proxy")
     parser.add_argument("--check-config", action="store_true",
                         help="только проверить конфигурацию и выйти (0 — корректна, 2 — ошибка)")
     args = parser.parse_args(argv)
@@ -1811,6 +2035,17 @@ def main(argv=None):
 
     # Применяем настройки к глобальным константам модуля (SERVICES, HINTS, пороги…).
     configure(settings)
+    # Переопределение режима проверок: --proxy > NETMON_PROXY > config.json.
+    proxy_override = args.proxy or os.environ.get("NETMON_PROXY") or None
+    if proxy_override:
+        proxy_override = proxy_override.strip()
+        if proxy_override not in ("direct", "system") and not _proxy_endpoint(proxy_override):
+            print("network.proxy: ожидается 'direct', 'system' или http://host:port, "
+                  "получено %r" % proxy_override, file=sys.stderr, flush=True)
+            return 2
+        global NETWORK_PROXY
+        NETWORK_PROXY = proxy_override
+        _PROXY_CACHE["until"] = 0.0
     host = args.host if args.host is not None else settings.host
     port = args.port if args.port is not None else settings.port
     interval = args.interval if args.interval is not None else settings.interval

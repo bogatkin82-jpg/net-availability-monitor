@@ -19,6 +19,9 @@
     "max_points": 8640,
     "series_points": 180
   },
+  "network": {
+    "proxy": "direct"
+  },
   "status_labels": {
     "ok": "Доступен",
     "degraded": "Нестабильно",
@@ -54,7 +57,9 @@
           "host": "www.youtube.com",
           "port": 443,
           "path": "/generate_204",
-          "expect": [204],
+          "expect": [
+            204
+          ],
           "core": true,
           "timeout": 8
         },
@@ -65,7 +70,9 @@
           "host": "i.ytimg.com",
           "port": 443,
           "path": "/generate_204",
-          "expect": [204],
+          "expect": [
+            204
+          ],
           "core": true,
           "timeout": 8
         },
@@ -76,7 +83,12 @@
           "host": "www.youtube.com",
           "port": 443,
           "path": "/",
-          "expect": [200, 301, 302, 303],
+          "expect": [
+            200,
+            301,
+            302,
+            303
+          ],
           "core": false,
           "timeout": 8
         },
@@ -120,7 +132,11 @@
           "host": "web.telegram.org",
           "port": 443,
           "path": "/",
-          "expect": [200, 301, 302],
+          "expect": [
+            200,
+            301,
+            302
+          ],
           "core": true,
           "timeout": 8
         },
@@ -131,7 +147,13 @@
           "host": "api.telegram.org",
           "port": 443,
           "path": "/",
-          "expect": [200, 301, 302, 400, 404],
+          "expect": [
+            200,
+            301,
+            302,
+            400,
+            404
+          ],
           "core": true,
           "timeout": 8
         },
@@ -201,7 +223,9 @@
           "host": "connectivitycheck.gstatic.com",
           "port": 443,
           "path": "/generate_204",
-          "expect": [204],
+          "expect": [
+            204
+          ],
           "core": true,
           "timeout": 8
         },
@@ -212,7 +236,9 @@
           "host": "cloudflare.com",
           "port": 443,
           "path": "/cdn-cgi/trace",
-          "expect": [200],
+          "expect": [
+            200
+          ],
           "core": true,
           "timeout": 8
         },
@@ -252,11 +278,17 @@
   "notifications": {
     "windows": {
       "enabled": true,
-      "notify_on": ["blocked", "down"]
+      "notify_on": [
+        "blocked",
+        "down"
+      ]
     },
     "android": {
       "enabled": true,
-      "notify_on": ["blocked", "down"],
+      "notify_on": [
+        "blocked",
+        "down"
+      ],
       "foreground_service": true,
       "sound": false,
       "vibrate": false

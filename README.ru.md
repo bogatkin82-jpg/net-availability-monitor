@@ -116,6 +116,7 @@ Release (разрешите установку из неизвестных ис�
   "polling": { "interval_sec": 20, "check_timeout_sec": 8, "dns_timeout_sec": 4 },
   "incidents": { "open_after_failures": 2, "close_after_successes": 1, "max_stored": 500 },
   "history": { "max_age_hours": 24, "max_points": 8640, "series_points": 180 },
+  "network": { "proxy": "direct" },
   "status_labels": { "ok": "Доступен", "blocked": "Похоже на блокировку" },
   "status_colors": { "ok": "#34c759", "degraded": "#ff9500", "blocked": "#ff3b30" },
   "services": [

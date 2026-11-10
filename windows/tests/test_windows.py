@@ -98,10 +98,13 @@ def subprocess_env():
     return env
 
 
+LOCAL_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def http_json(url, timeout=5.0, method="GET"):
     request = urllib.request.Request(url, data=b"" if method == "POST" else None,
                                      method=method)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with LOCAL_OPENER.open(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
 

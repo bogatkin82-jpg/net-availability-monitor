@@ -47,6 +47,10 @@ open http://127.0.0.1:8099/
 runtime to `~/Library/Application Support/netmon` (outside TCC-protected folders) and registers
 two LaunchAgents so the server and the indicator start at login and recover after a crash.
 
+If your browser uses a system HTTP proxy or VPN (Happ, corporate proxy), install with
+`NETMON_PROXY=system ./install.sh` so the checks follow the same path as the browser; without it
+the dot reflects the **direct** connection and may stay red while the browser works.
+
 Menu-bar indicator modes (set in `config.json` → `display.macos_menubar.mode`):
 
 - `overlay` — floating colored dot in the top-right corner, always visible above other windows;
@@ -122,6 +126,7 @@ trigger it manually (Actions → Android APK / Windows build → Run workflow �
   "polling": { "interval_sec": 20, "check_timeout_sec": 8, "dns_timeout_sec": 4 },
   "incidents": { "open_after_failures": 2, "close_after_successes": 1, "max_stored": 500 },
   "history": { "max_age_hours": 24, "max_points": 8640, "series_points": 180 },
+  "network": { "proxy": "direct" },
   "status_labels": { "ok": "Доступен", "blocked": "Похоже на блокировку", "...": "..." },
   "status_colors": { "ok": "#34c759", "degraded": "#ff9500", "blocked": "#ff3b30", "...": "..." },
   "services": [
@@ -144,7 +149,26 @@ python3 tools/check_config.py            # validate schema + Android asset parit
 python3 tools/check_config.py --sync     # copy config.json into the Android assets
 ```
 
-Server-side overrides: `--config PATH`, `--port`, `--interval`; env `NETMON_CONFIG`.
+Server-side overrides: `--config PATH`, `--port`, `--interval`, `--proxy direct|system`;
+env `NETMON_CONFIG`, `NETMON_PROXY`.
+
+### Direct vs system proxy/VPN
+
+By default every check opens a raw socket (DNS → TCP → TLS → HTTP) on the **direct** path.
+That is what you want to detect filtering/blocking. If your browser reaches YouTube/Telegram
+through a system HTTP proxy or VPN, set:
+
+- `"network": { "proxy": "system" }` — auto-detect the OS proxy (macOS `scutil`, Windows
+  Internet Settings, Linux `http(s)_proxy` / `all_proxy`) and tunnel checks through it with
+  HTTP `CONNECT` (TLS/SNI and certificate validation are preserved);
+- `"http://host:port"` — an explicit HTTP proxy;
+- `"direct"` — raw sockets (default).
+
+The override works too: `./server.py --proxy system` or `NETMON_PROXY=system`. `/api/state`
+exposes `proxy: {mode, active, url}` and each check has `proxy_used`; the macOS indicator
+shows the active proxy in its tooltip/menu. If a `system` proxy disappears, checks fall back
+to direct so monitoring keeps working. Android already routes all traffic through the system
+VPN (`tun`), so it ignores `network.proxy`.
 
 ## How statuses are computed
 

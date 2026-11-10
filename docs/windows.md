@@ -417,6 +417,14 @@ Import-Certificate -FilePath .\netmon-code-signing.cer -CertStoreLocation Cert:\
 Секреты CI: `WINDOWS_PFX_BASE64` (base64 от `.pfx`) и `WINDOWS_PFX_PASSWORD`. Без них
 push/PR-сборки собираются неподписанными; релизные теги требуют валидную подпись.
 
+## Проверки через системный прокси/VPN
+
+`network.proxy` в `config.json`: `direct` (по умолчанию, сокеты напрямую), `system`
+(системный HTTP-прокси — на Windows берётся из HKCU Internet Settings) или
+`http://host:port`. Также `--proxy system` / `NETMON_PROXY=system`. В `/api/state` видно
+`proxy` и `proxy_used` у проверок. Android использует системный VPN автоматически
+(весь трафик идёт через `tun`), поэтому `network.proxy` не требует.
+
 ## Nightly
 
 Каждую ночь workflow `Windows build` (cron `0 2 * * *`) публикует prerelease с тегом

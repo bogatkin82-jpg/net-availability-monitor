@@ -15,6 +15,16 @@
 import Cocoa
 import Foundation
 
+/// URLSession без системного прокси: запросы к локальному API на 127.0.0.1
+/// не должны уходить в Happ/корпоративный прокси (иначе 502 Bad Gateway).
+let localURLSession: URLSession = {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.connectionProxyDictionary = [:]
+    configuration.timeoutIntervalForRequest = 10
+    return URLSession(configuration: configuration)
+}()
+
+
 let logPath = "/tmp/netmon-menubar.log"
 
 func colorFromHex(_ value: String) -> NSColor? {
@@ -196,7 +206,7 @@ func fetchStateSynchronously() -> [String: Any]? {
     request.httpMethod = "GET"
     let semaphore = DispatchSemaphore(value: 0)
     var payload: Data?
-    URLSession.shared.dataTask(with: request) { data, _, _ in
+    localURLSession.dataTask(with: request) { data, _, _ in
         payload = data
         semaphore.signal()
     }.resume()
@@ -444,7 +454,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                  cachePolicy: .reloadIgnoringLocalCacheData,
                                  timeoutInterval: 4)
         request.httpMethod = "GET"
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
+        localURLSession.dataTask(with: request) { [weak self] data, _, _ in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 if let data = data,
@@ -468,7 +478,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var request = URLRequest(url: monitorCheckURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
         request.httpMethod = "POST"
         request.httpBody = Data()
-        URLSession.shared.dataTask(with: request) { [weak self] _, _, _ in
+        localURLSession.dataTask(with: request) { [weak self] _, _, _ in
             DispatchQueue.main.async {
                 self?.checking = false
                 self?.refresh()
@@ -503,6 +513,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func tooltipText(youtube: String, telegram: String, internet: String) -> String {
         var tooltip = "YouTube: \(statusName(youtube))\nTelegram: \(statusName(telegram))\nИнтернет: \(statusName(internet))"
+        if let proxy = lastState?["proxy"] as? [String: Any],
+           (proxy["active"] as? Bool) == true,
+           let url = proxy["url"] as? String {
+            tooltip += "\nПрокси: \(proxy["mode"] as? String ?? "system") — \(url)"
+        }
         if let updated = lastUpdated {
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm:ss"
@@ -669,6 +684,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let checks = "\(summary["checks_ok"] ?? "?")/\(summary["checks_total"] ?? "?") проверок"
             let incidents = summary["active_incidents"] as? Int ?? 0
             addDisabled("\(checks) · инцидентов: \(incidents)", small: true)
+            if let proxy = lastState?["proxy"] as? [String: Any],
+               (proxy["active"] as? Bool) == true,
+               let url = proxy["url"] as? String {
+                addDisabled("Проверки через прокси \(url)", small: true)
+            }
             menu.addItem(NSMenuItem.separator())
             for id in ["youtube", "telegram", "internet"] {
                 if let service = serviceState(id) { addService(service) }

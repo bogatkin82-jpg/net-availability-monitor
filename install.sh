@@ -23,6 +23,7 @@ MENUBAR_LABEL="local.netmon.menubar"
 UID_NUM="$(id -u)"
 PYTHON_BIN="$(command -v python3 || true)"
 
+NETMON_PROXY_VALUE="${NETMON_PROXY:-}"
 SERVER_PORT="$(python3 - "$PROJECT_DIR/config.json" <<'PY'
 import json, sys
 try:
@@ -136,6 +137,7 @@ cat > "$AGENTS_DIR/$SERVER_LABEL.plist" <<PLIST
     <key>EnvironmentVariables</key>
     <dict>
         <key>PYTHONDONTWRITEBYTECODE</key><string>1</string>
+        <key>NETMON_PROXY</key><string>$NETMON_PROXY_VALUE</string>
     </dict>
     <key>StandardOutPath</key><string>$LOGS_DIR/netmon-server.log</string>
     <key>StandardErrorPath</key><string>$LOGS_DIR/netmon-server.log</string>

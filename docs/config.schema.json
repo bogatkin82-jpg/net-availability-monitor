@@ -336,6 +336,17 @@
           "maximum": 600000
         }
       }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "proxy": {
+          "type": "string",
+          "description": "direct — проверять напрямую; system — через системный HTTP-прокси/VPN; http://host:port — явный прокси",
+          "pattern": "^(direct|system|http://[^\\s/]+:\\d+)$"
+        }
+      }
     }
   },
   "definitions": {

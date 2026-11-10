@@ -78,6 +78,16 @@ def check_config(config):
                 "status_labels.%s обязателен" % status)
         require(is_hex_color(colors.get(status)), "status_colors.%s должен быть #RRGGBB" % status)
 
+    network = config.get("network", {})
+    require(isinstance(network, dict), "network должен быть объектом")
+    proxy = network.get("proxy", "direct")
+    require(isinstance(proxy, str), "network.proxy должен быть строкой")
+    if proxy not in ("direct", "system"):
+        from urllib.parse import urlsplit
+        parsed = urlsplit(proxy)
+        require(parsed.scheme == "http" and parsed.hostname and parsed.port is not None,
+                "network.proxy: ожидается 'direct', 'system' или http://host:port")
+
     services = config.get("services")
     require(isinstance(services, list) and services, "services должен быть непустым массивом")
     service_ids = set()

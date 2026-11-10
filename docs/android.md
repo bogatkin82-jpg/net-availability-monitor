@@ -192,6 +192,14 @@ export ANDROID_KEYSTORE_PATH=/path/to/netmon-release.jks \
 ./gradlew assembleRelease bundleRelease
 ```
 
+## Проверки через системный прокси/VPN
+
+`network.proxy` в `config.json`: `direct` (по умолчанию, сокеты напрямую), `system`
+(системный HTTP-прокси — на Windows берётся из HKCU Internet Settings) или
+`http://host:port`. Также `--proxy system` / `NETMON_PROXY=system`. В `/api/state` видно
+`proxy` и `proxy_used` у проверок. Android использует системный VPN автоматически
+(весь трафик идёт через `tun`), поэтому `network.proxy` не требует.
+
 ## Nightly
 
 Каждую ночь workflow `Android APK` (cron `15 2 * * *`) публикует prerelease с тегом
