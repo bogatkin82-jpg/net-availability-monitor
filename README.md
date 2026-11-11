@@ -210,6 +210,8 @@ curl -s 'http://127.0.0.1:8099/api/incidents?q=таймаут&service=telegram&s
 
 Android app on a real device (BKQ-AN90, Android API 37): [status screen](docs/screenshots/android.png) ·
 [journal](docs/screenshots/android-journal.png) — 16/16 checks, YouTube reachable.
+Status-bar indicator: [notification shade](docs/screenshots/android-notification.png) ·
+[home screen icon](docs/screenshots/android-statusbar.png).
 
 
 ## Repository layout

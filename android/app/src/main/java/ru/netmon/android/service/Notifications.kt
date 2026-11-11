@@ -112,16 +112,29 @@ class Notifications(private val context: Context, private val config: AppConfig)
         }
     }
 
+    /** Худший статус для индикатора — как цветная точка в menu bar macOS. */
+    private fun indicatorStatus(snapshot: Snapshot): Status {
+        val statuses = snapshot.services.map { it.status } + snapshot.internet.status
+        return when {
+            statuses.any { it == Status.DOWN } -> Status.DOWN
+            statuses.any { it == Status.BLOCKED } -> Status.BLOCKED
+            statuses.any { it == Status.DEGRADED } -> Status.DEGRADED
+            statuses.any { it == Status.UNKNOWN } -> Status.UNKNOWN
+            else -> Status.OK
+        }
+    }
+
     /** Постоянное уведомление со сводкой статусов и иконкой-индикатором. */
     fun statusNotification(snapshot: Snapshot): Notification {
         val lines = snapshot.services.joinToString(" · ") { service ->
             "${service.name}: ${service.statusLabel}"
         }
         val overall = snapshot.summary.overall
+        val indicator = indicatorStatus(snapshot)
         val title = "Мониторинг сети · ${snapshot.summary.overallLabel}"
         val builder = Notification.Builder(context, CHANNEL_STATUS)
-            .setSmallIcon(statusIcon(overall))
-            .setColor(statusColor(overall))
+            .setSmallIcon(statusIcon(indicator))
+            .setColor(statusColor(indicator))
             .setContentTitle(title)
             .setContentText(lines.ifEmpty { "Проверки ещё не выполнялись" })
             .setStyle(Notification.BigTextStyle().bigText(lines))
