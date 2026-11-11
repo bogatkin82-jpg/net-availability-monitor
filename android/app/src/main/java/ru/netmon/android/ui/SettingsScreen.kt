@@ -26,6 +26,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -44,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import ru.netmon.core.AppConfig
 import ru.netmon.core.Status
 import ru.netmon.android.widget.StatusClockWidget
+import ru.netmon.android.widget.WeatherRepository
+import ru.netmon.android.widget.WidgetCityPrefs
 import ru.netmon.core.UserSettings
 
 /** Экран «Настройки»: значения по умолчанию — из config.json, правки — в SharedPreferences. */
@@ -207,6 +210,21 @@ fun SettingsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Добавить виджет-часы на главный экран") }
+            var cityDraft by remember { mutableStateOf(WidgetCityPrefs.get(context)) }
+            OutlinedTextField(
+                value = cityDraft,
+                onValueChange = { cityDraft = it },
+                label = { Text("Город для виджета-погоды") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            TextButton(
+                onClick = {
+                    WidgetCityPrefs.set(context, cityDraft)
+                    WeatherRepository.refreshIfNeeded(context, force = true)
+                    Toast.makeText(context, "Город сохранён", Toast.LENGTH_SHORT).show()
+                },
+            ) { Text("Сохранить город") }
             SwitchRow(
                 label = "Индикатор статуса в строке состояния",
                 caption = "запускать при сохранении настроек и при открытии приложения",

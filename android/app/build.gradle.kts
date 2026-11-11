@@ -82,6 +82,12 @@ android {
 
     sourceSets["main"].assets.srcDirs("src/main/assets")
 
+    // Локальная сборка с ресурсами HONOR: папка в .gitignore, в CI её нет.
+    val localHonorRes = file("src/localHonor/res")
+    if (localHonorRes.isDirectory) {
+        sourceSets["main"].res.srcDir(localHonorRes)
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

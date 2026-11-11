@@ -63,3 +63,7 @@ ios/build/
 ios/DerivedData/
 ios/NetMon.xcodeproj/
 ios/*.xcworkspace/
+
+# Локальные проприетарные ассеты HONOR (только на этой машине)
+android/app/src/localHonor/
+local-artifacts/
