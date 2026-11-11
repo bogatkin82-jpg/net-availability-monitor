@@ -38,7 +38,7 @@ class StatusClockWidget : AppWidgetProvider() {
         private var latestSnapshot: Snapshot? = null
 
         private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        private val dateFormat = SimpleDateFormat("d MMMM EEE", Locale("ru"))
+        private val dateFormat = SimpleDateFormat("EEE, dd.MM.yy", Locale("ru"))
 
         /** Вызывается сервисом после каждого раунда проверок. */
         fun updateAll(context: Context, snapshot: Snapshot) {
@@ -93,11 +93,12 @@ class StatusClockWidget : AppWidgetProvider() {
             val now = Date()
             views.setTextViewText(R.id.widget_time, timeFormat.format(now))
             views.setTextColor(R.id.widget_time, color)
-            val dateParts = dateFormat.format(now).split(" ")
-            val weekday = dateParts.last().replaceFirstChar { it.uppercase() }
+            val rawDate = dateFormat.format(now)
+            val dateParts = rawDate.split(", ", limit = 2)
+            val weekday = dateParts[0].replaceFirstChar { it.uppercase() }
             views.setTextViewText(
                 R.id.widget_date,
-                (dateParts.dropLast(1) + weekday).joinToString(" "),
+                if (dateParts.size == 2) "$weekday, ${dateParts[1]}" else weekday,
             )
 
             val weather = WeatherRepository.cached

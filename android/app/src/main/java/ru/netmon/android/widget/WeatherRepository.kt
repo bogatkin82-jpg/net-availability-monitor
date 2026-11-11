@@ -1,11 +1,21 @@
 package ru.netmon.android.widget
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.net.URL
+import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 /** Погода для виджета: город/координаты по IP, текущие данные Open-Meteo. */
@@ -54,6 +64,8 @@ object WeatherRepository {
 
     /** @return latitude, longitude, city */
     private fun fetchGeo(context: Context): Triple<Double, Double, String> {
+        // Как в оригинале: сначала координаты телефона.
+        locationGeo(context)?.let { return it }
         val manual = WidgetCityPrefs.get(context)
         if (manual.isNotBlank()) {
             val point = geocode(manual)
@@ -72,6 +84,118 @@ object WeatherRepository {
         val lon = fallback.optDouble("longitude", Double.NaN)
         require(!lat.isNaN() && !lon.isNaN()) { "no coordinates" }
         return Triple(lat, lon, fallback.optString("city", "").ifBlank { "—" })
+    }
+
+    /** Последняя известная геопозиция + обратное геокодирование в город. */
+    private fun locationGeo(context: Context): Triple<Double, Double, String>? {
+        val fine = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!fine && !coarse) return null
+        val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
+        val location = currentLocation(context, manager) ?: return null
+        val reverse = reverseGeocode(context, location.latitude, location.longitude)
+        val manual = WidgetCityPrefs.get(context)
+        // OSM в сельской местности часто отдаёт «городской округ» вместо посёлка —
+        // сохраняем координаты GPS, но показываем сохранённое имя, если оно есть.
+        val city = if (
+            manual.isNotBlank() && (
+                reverse.contains("округ", ignoreCase = true) ||
+                    reverse.contains("район", ignoreCase = true) ||
+                    reverse.contains("область", ignoreCase = true)
+                )
+        ) manual else reverse
+        return Triple(location.latitude, location.longitude, city)
+    }
+
+    /** Свежая геопозиция; при неудаче — последняя известная. */
+    private fun currentLocation(context: Context, manager: LocationManager): Location? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            for (provider in listOf(
+                LocationManager.NETWORK_PROVIDER,
+                LocationManager.GPS_PROVIDER,
+            )) {
+                try {
+                    if (!manager.isProviderEnabled(provider)) continue
+                    val latch = CountDownLatch(1)
+                    var result: Location? = null
+                    manager.getCurrentLocation(
+                        provider,
+                        null,
+                        context.mainExecutor,
+                    ) { location ->
+                        result = location
+                        latch.countDown()
+                    }
+                    if (latch.await(4, TimeUnit.SECONDS) && result != null) {
+                        return result
+                    }
+                } catch (exc: SecurityException) {
+                    // нет разрешения на провайдер
+                } catch (exc: IllegalArgumentException) {
+                    // провайдер выключен
+                }
+            }
+        }
+        var best: Location? = null
+        for (provider in listOf(
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+            LocationManager.PASSIVE_PROVIDER,
+        )) {
+            try {
+                val location = manager.getLastKnownLocation(provider) ?: continue
+                if (best == null || location.time > best!!.time) best = location
+            } catch (exc: SecurityException) {
+                // нет разрешения
+            } catch (exc: IllegalArgumentException) {
+                // провайдер выключен
+            }
+        }
+        return best
+    }
+
+    private fun reverseGeocode(context: Context, lat: Double, lon: Double): String {
+        // Сначала населённый пункт (city/locality), а не административный район.
+        runCatching {
+            val json = fetchJson(
+                "https://api.bigdatacloud.net/data/reverse-geocode-client" +
+                    "?latitude=$lat&longitude=$lon&localityLanguage=ru",
+            )
+            json.optString("city").ifBlank { json.optString("locality") }
+        }.getOrNull()?.takeIf { it.isNotBlank() }?.let { return it }
+        try {
+            val address = Geocoder(context, Locale("ru"))
+                .getFromLocation(lat, lon, 1)
+                ?.firstOrNull()
+            val city = address?.locality ?: address?.subLocality
+            if (!city.isNullOrBlank()) return city
+        } catch (exc: Exception) {
+            // Geocoder недоступен
+        }
+        runCatching {
+            val json = fetchJson(
+                "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
+                    "&lat=$lat&lon=$lon&accept-language=ru",
+            )
+            val address = json.optJSONObject("address")
+            if (address != null) {
+                val city = address.optString("city").ifBlank {
+                    address.optString("town").ifBlank {
+                        address.optString("village").ifBlank {
+                            address.optString("suburb").ifBlank {
+                                address.optString("municipality")
+                            }
+                        }
+                    }
+                }
+                if (city.isNotBlank()) return city
+            }
+        }
+        return "Рядом с вами"
     }
 
     /** Геокодинг ручного города через Open-Meteo. */

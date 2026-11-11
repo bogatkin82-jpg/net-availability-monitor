@@ -25,6 +25,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.netmon.core.AppConfig
 import ru.netmon.core.Status
+import androidx.core.content.ContextCompat
 import ru.netmon.android.widget.StatusClockWidget
 import ru.netmon.android.widget.WeatherRepository
 import ru.netmon.android.widget.WidgetCityPrefs
@@ -225,6 +229,58 @@ fun SettingsScreen(
                     Toast.makeText(context, "Город сохранён", Toast.LENGTH_SHORT).show()
                 },
             ) { Text("Сохранить город") }
+
+            val locationLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions(),
+            ) { granted ->
+                if (granted.values.any { it }) {
+                    WeatherRepository.refreshIfNeeded(context, force = true)
+                    Toast.makeText(context, "Город будет по геопозиции", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Геопозиция не разрешена", Toast.LENGTH_SHORT).show()
+                }
+            }
+            val locationGranted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_COARSE_LOCATION,
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            Button(
+                onClick = {
+                    locationLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        ),
+                    )
+                },
+            ) {
+                Text(
+                    if (locationGranted) "Обновить город по геопозиции"
+                    else "Разрешить геопозицию для погоды",
+                )
+            }
+
+            Button(
+                onClick = {
+                    try {
+                        val intent = android.content.Intent(
+                            android.app.WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER,
+                        ).putExtra(
+                            android.app.WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                            android.content.ComponentName(
+                                context,
+                                ru.netmon.android.wallpaper.WeatherWallpaperService::class.java,
+                            ),
+                        )
+                        context.startActivity(intent)
+                    } catch (exc: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Не удалось открыть выбор живого фона",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                },
+            ) { Text("Включить живой фон погоды") }
             SwitchRow(
                 label = "Индикатор статуса в строке состояния",
                 caption = "запускать при сохранении настроек и при открытии приложения",
