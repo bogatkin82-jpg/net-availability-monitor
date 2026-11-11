@@ -7,6 +7,5 @@
     <string name="notification_channel_status_desc">Постоянное уведомление с текущим статусом проверок</string>
     <string name="notification_channel_alerts">Оповещения о сбоях</string>
     <string name="notification_channel_alerts_desc">Уведомления при переходе сервиса в blocked/down</string>
-    <string name="weather_wallpaper_desc">Живой фон с анимацией погоды</string>
     <string name="widget_clock_desc">Часы и погода; цвет времени — статус сети</string>
 </resources>

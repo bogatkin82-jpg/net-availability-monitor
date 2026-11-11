@@ -25,9 +25,11 @@ object WidgetCityPrefs {
      * Как часто обновлять город по GPS, в минутах.
      * -1 — не обновлять автоматически (только ручной город/кэш).
      */
-    fun geoRefreshMinutes(context: Context): Int =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getInt(KEY_GEO_REFRESH, 30)
+    fun geoRefreshMinutes(context: Context): Int {
+        val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getInt(KEY_GEO_REFRESH, 120)
+        return if (stored in setOf(120, 240, 480, -1)) stored else 120
+    }
 
     fun setGeoRefreshMinutes(context: Context, minutes: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

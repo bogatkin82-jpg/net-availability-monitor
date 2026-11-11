@@ -32,18 +32,6 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".wallpaper.WeatherWallpaperService"
-            android:exported="true"
-            android:permission="android.permission.BIND_WALLPAPER">
-            <intent-filter>
-                <action android:name="android.service.wallpaper.WallpaperService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.service.wallpaper"
-                android:resource="@xml/weather_wallpaper" />
-        </service>
-
         <receiver
             android:name=".widget.StatusClockWidget"
             android:exported="true">

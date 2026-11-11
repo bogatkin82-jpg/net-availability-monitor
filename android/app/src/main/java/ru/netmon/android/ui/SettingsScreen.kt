@@ -228,7 +228,7 @@ fun SettingsScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                listOf(15 to "15 мин", 30 to "30 мин", 60 to "1 час", -1 to "вручную")
+                listOf(120 to "2 часа", 240 to "4 часа", 480 to "8 часов", -1 to "вручную")
                     .forEach { (minutes, label) ->
                         FilterChip(
                             selected = geoRefresh == minutes,
@@ -294,28 +294,6 @@ fun SettingsScreen(
                 )
             }
 
-            Button(
-                onClick = {
-                    try {
-                        val intent = android.content.Intent(
-                            android.app.WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER,
-                        ).putExtra(
-                            android.app.WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                            android.content.ComponentName(
-                                context,
-                                ru.netmon.android.wallpaper.WeatherWallpaperService::class.java,
-                            ),
-                        )
-                        context.startActivity(intent)
-                    } catch (exc: Exception) {
-                        Toast.makeText(
-                            context,
-                            "Не удалось открыть выбор живого фона",
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    }
-                },
-            ) { Text("Включить живой фон погоды") }
             SwitchRow(
                 label = "Индикатор статуса в строке состояния",
                 caption = "запускать при сохранении настроек и при открытии приложения",
