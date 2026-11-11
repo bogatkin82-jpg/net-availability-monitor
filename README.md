@@ -212,6 +212,7 @@ Android app on a real device (BKQ-AN90, Android API 37): [status screen](docs/sc
 [journal](docs/screenshots/android-journal.png) — 16/16 checks, YouTube reachable.
 Status-bar indicator: [notification shade](docs/screenshots/android-notification.png) ·
 [home screen icon](docs/screenshots/android-statusbar.png).
+Clock widget with colored time: [Android widget](docs/screenshots/android-widget.png).
 
 
 ## Repository layout

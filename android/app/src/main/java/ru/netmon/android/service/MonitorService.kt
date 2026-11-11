@@ -18,6 +18,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ru.netmon.android.NetMonApp
 import ru.netmon.android.monitor.MonitorController
+import ru.netmon.android.widget.StatusClockWidget
 import ru.netmon.core.Snapshot
 import ru.netmon.core.UserSettings
 
@@ -96,6 +97,7 @@ class MonitorService : Service() {
     private suspend fun runRoundAndPublish() {
         val snapshot = controller.refresh() ?: return
         notifications.notifyStatus(snapshot)
+        StatusClockWidget.updateAll(this, snapshot)
     }
 
     override fun onDestroy() {

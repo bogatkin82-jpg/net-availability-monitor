@@ -1,5 +1,10 @@
 package ru.netmon.android.ui
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.os.Build
+import android.widget.Toast
+
 import android.content.Intent
 import android.provider.Settings
 
@@ -38,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.netmon.core.AppConfig
 import ru.netmon.core.Status
+import ru.netmon.android.widget.StatusClockWidget
 import ru.netmon.core.UserSettings
 
 /** Экран «Настройки»: значения по умолчанию — из config.json, правки — в SharedPreferences. */
@@ -183,6 +189,24 @@ fun SettingsScreen(
                     context.startActivity(intent)
                 },
             ) { Text("Настройки уведомлений приложения") }
+            OutlinedButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val manager = AppWidgetManager.getInstance(context)
+                        val provider = ComponentName(context, StatusClockWidget::class.java)
+                        if (manager.isRequestPinAppWidgetSupported) {
+                            manager.requestPinAppWidget(provider, null, null)
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Добавьте виджет вручную: долгий тап по рабочему столу → Виджеты",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Добавить виджет-часы на главный экран") }
             SwitchRow(
                 label = "Индикатор статуса в строке состояния",
                 caption = "запускать при сохранении настроек и при открытии приложения",
