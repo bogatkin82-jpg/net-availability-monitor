@@ -54,39 +54,6 @@ class Notifications(private val context: Context, private val config: AppConfig)
         manager.createNotificationChannel(channel)
     }
 
-    /**
-     * Канал алертов: настройки звука/вибрации нельзя менять у существующего
-     * канала, поэтому id зависит от них (создаём только нужный вариант).
-     */
-    fun alertChannelId(sound: Boolean, vibrate: Boolean): String =
-        "net_monitor_alerts_${if (sound) "s" else "q"}_${if (vibrate) "v" else "n"}"
-
-    fun ensureAlertChannel(sound: Boolean, vibrate: Boolean) {
-        val channelId = alertChannelId(sound, vibrate)
-        if (manager.getNotificationChannel(channelId) != null) return
-        val channel = NotificationChannel(
-            channelId,
-            context.getString(R.string.notification_channel_alerts),
-            NotificationManager.IMPORTANCE_HIGH,
-        ).apply {
-            description = context.getString(R.string.notification_channel_alerts_desc)
-            enableVibration(vibrate)
-            if (!vibrate) {
-                vibrationPattern = longArrayOf(0)
-                enableVibration(false)
-            }
-            if (sound) {
-                setSound(
-                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION),
-                    null,
-                )
-            } else {
-                setSound(null, null)
-            }
-        }
-        manager.createNotificationChannel(channel)
-    }
-
     private fun contentIntent(): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -184,48 +151,10 @@ class Notifications(private val context: Context, private val config: AppConfig)
         return builder.build()
     }
 
-    /** Оповещение о переходе сервиса в blocked/down. */
-    fun alertNotification(
-        serviceName: String,
-        statusLabel: String,
-        reason: String,
-        sound: Boolean,
-        vibrate: Boolean,
-    ): Notification {
-        return Notification.Builder(context, alertChannelId(sound, vibrate))
-            .setSmallIcon(R.drawable.ic_stat_network)
-            .setContentTitle("$serviceName: $statusLabel")
-            .setContentText(reason)
-            .setStyle(Notification.BigTextStyle().bigText(reason))
-            .setAutoCancel(true)
-            .setContentIntent(contentIntent())
-            .build()
-    }
-
     fun notifyStatus(snapshot: Snapshot) {
         ensureStatusChannel()
-        NotificationManagerCompat.from(context).notify(STATUS_NOTIFICATION_ID, statusNotification(snapshot))
-    }
-
-    fun notifyAlert(
-        serviceId: String,
-        serviceName: String,
-        statusLabel: String,
-        reason: String,
-        sound: Boolean,
-        vibrate: Boolean,
-    ) {
-        ensureAlertChannel(sound, vibrate)
-        val id = ALERT_NOTIFICATION_BASE + (serviceId.hashCode() and 0x7F)
-        NotificationManagerCompat.from(context).notify(
-            id,
-            alertNotification(serviceName, statusLabel, reason, sound, vibrate),
-        )
-    }
-
-    fun cancelAlert(serviceId: String) {
         NotificationManagerCompat.from(context)
-            .cancel(ALERT_NOTIFICATION_BASE + (serviceId.hashCode() and 0x7F))
+            .notify(STATUS_NOTIFICATION_ID, statusNotification(snapshot))
     }
 
     fun cancelAll() {
@@ -235,11 +164,8 @@ class Notifications(private val context: Context, private val config: AppConfig)
     companion object {
         const val CHANNEL_STATUS: String = "net_monitor_status_v3"
         const val STATUS_NOTIFICATION_ID: Int = 1001
-        const val ALERT_NOTIFICATION_BASE: Int = 2000
         private const val REQ_CHECK = 11
         private const val REQ_STOP = 12
 
-        /** Статусы, при которых показываем системный алерт (по умолчанию из config). */
-        val ALERT_STATUSES: Set<String> = setOf(Status.BLOCKED.id, Status.DOWN.id)
     }
 }

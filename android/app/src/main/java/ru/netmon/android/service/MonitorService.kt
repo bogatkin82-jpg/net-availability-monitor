@@ -36,8 +36,6 @@ class MonitorService : Service() {
     private lateinit var notifications: Notifications
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var loopJob: Job? = null
-    private var alertsSeeded = false
-    private val lastAlertStatuses = mutableMapOf<String, String>()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -69,9 +67,7 @@ class MonitorService : Service() {
     }
 
     private fun ensureForeground() {
-        val settings = controller.settings.value
         notifications.ensureStatusChannel()
-        notifications.ensureAlertChannel(settings.sound, settings.vibrate)
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         } else {
@@ -100,32 +96,6 @@ class MonitorService : Service() {
     private suspend fun runRoundAndPublish() {
         val snapshot = controller.refresh() ?: return
         notifications.notifyStatus(snapshot)
-        maybeNotifyAlerts(snapshot)
-    }
-
-    /**
-     * Уведомление о переходе статуса сервиса в один из notify_on.
-     * Первый снимок после старта только запоминает статусы (без спама).
-     */
-    private fun maybeNotifyAlerts(snapshot: Snapshot) {
-        val settings = controller.settings.value
-        val seeded = alertsSeeded
-        snapshot.services.forEach { service ->
-            val current = service.status.id
-            val previous = lastAlertStatuses[service.id]
-            if (seeded && previous != null && previous != current && current in settings.notifyOn) {
-                notifications.notifyAlert(
-                    serviceId = service.id,
-                    serviceName = service.name,
-                    statusLabel = service.statusLabel,
-                    reason = service.statusReason,
-                    sound = settings.sound,
-                    vibrate = settings.vibrate,
-                )
-            }
-            lastAlertStatuses[service.id] = current
-        }
-        alertsSeeded = true
     }
 
     override fun onDestroy() {

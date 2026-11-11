@@ -83,10 +83,10 @@ permission. The APK is signed with the project release key; its certificate SHA-
 for releasing through Google Play.
 
 The phone performs checks itself — no PC required. A foreground service keeps polling in the
-background, shows a persistent **status icon next to the clock** (a monochrome dot whose shape
-encodes the state: ● ok, ◐ degraded, ⊘ blocked, ✕ down, ○ unknown; Android does not allow colored
-status-bar icons, the color is shown in the notification shade) and notifies you when
-YouTube/Telegram become blocked or unreachable. Settings
+background and shows a persistent **status icon next to the clock** (a monochrome glyph whose
+shape encodes the state: ● ok, ▲ degraded, ⊘ blocked, ✕ down, ○ unknown). There are no separate
+"status changed" notifications; the color status is visible in the notification shade, while the
+status-bar tint is controlled by the system theme. Settings
 (interval, thresholds, enabled services, notifications) are editable in the app and default to
 `config.json`. See [docs/android.md](docs/android.md).
 
