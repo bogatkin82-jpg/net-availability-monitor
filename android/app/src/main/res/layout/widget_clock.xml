@@ -52,7 +52,7 @@
         android:shadowDx="0"
         android:shadowDy="1"
         android:shadowRadius="4"
-        android:text="Ср, 11.11.26"
+        android:text="11 ноября Ср"
         android:textColor="#D9FFFFFF"
         android:textFontWeight="500"
         android:textSize="14dp" />
