@@ -99,15 +99,18 @@ object WeatherRepository {
         val location = currentLocation(context, manager) ?: return null
         val reverse = reverseGeocode(context, location.latitude, location.longitude)
         val manual = WidgetCityPrefs.get(context)
-        // OSM в сельской местности часто отдаёт «городской округ» вместо посёлка —
-        // сохраняем координаты GPS, но показываем сохранённое имя, если оно есть.
-        val city = if (
+        // Координаты всегда из GPS; имя — только кириллицей.
+        // Если геокодер отдал район/транслит, показываем сохранённое русское имя.
+        val city = when {
             manual.isNotBlank() && (
-                reverse.contains("округ", ignoreCase = true) ||
-                    reverse.contains("район", ignoreCase = true) ||
-                    reverse.contains("область", ignoreCase = true)
-                )
-        ) manual else reverse
+                reverse.isBlank() ||
+                    !hasCyrillic(reverse) ||
+                    looksAdministrative(reverse)
+                ) -> manual
+            reverse.isNotBlank() -> reverse
+            manual.isNotBlank() -> manual
+            else -> "Рядом с вами"
+        }
         return Triple(location.latitude, location.longitude, city)
     }
 
@@ -159,43 +162,49 @@ object WeatherRepository {
     }
 
     private fun reverseGeocode(context: Context, lat: Double, lon: Double): String {
-        // Сначала населённый пункт (city/locality), а не административный район.
+        // Nominatim первым: accept-language=ru даёт кириллические названия.
+        runCatching {
+            val json = fetchJson(
+                "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
+                    "&lat=$lat&lon=$lon&accept-language=ru&zoom=18",
+            )
+            val address = json.optJSONObject("address") ?: return@runCatching null
+            listOf("city", "town", "village", "suburb", "municipality")
+                .asSequence()
+                .map { address.optString(it) }
+                .firstOrNull { it.isNotBlank() && hasCyrillic(it) }
+        }.getOrNull()?.let { return it }
+
+        // BigDataCloud тоже умеет ru, но иногда отдаёт транслит — фильтруем.
         runCatching {
             val json = fetchJson(
                 "https://api.bigdatacloud.net/data/reverse-geocode-client" +
                     "?latitude=$lat&longitude=$lon&localityLanguage=ru",
             )
             json.optString("city").ifBlank { json.optString("locality") }
-        }.getOrNull()?.takeIf { it.isNotBlank() }?.let { return it }
+        }.getOrNull()?.takeIf { it.isNotBlank() && hasCyrillic(it) }?.let { return it }
+
         try {
             val address = Geocoder(context, Locale("ru"))
                 .getFromLocation(lat, lon, 1)
                 ?.firstOrNull()
             val city = address?.locality ?: address?.subLocality
-            if (!city.isNullOrBlank()) return city
+            if (!city.isNullOrBlank() && hasCyrillic(city)) return city
         } catch (exc: Exception) {
             // Geocoder недоступен
         }
-        runCatching {
-            val json = fetchJson(
-                "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
-                    "&lat=$lat&lon=$lon&accept-language=ru",
-            )
-            val address = json.optJSONObject("address")
-            if (address != null) {
-                val city = address.optString("city").ifBlank {
-                    address.optString("town").ifBlank {
-                        address.optString("village").ifBlank {
-                            address.optString("suburb").ifBlank {
-                                address.optString("municipality")
-                            }
-                        }
-                    }
-                }
-                if (city.isNotBlank()) return city
-            }
-        }
-        return "Рядом с вами"
+        return ""
+    }
+
+    private fun hasCyrillic(text: String): Boolean =
+        text.any { it in '\u0400'..'\u04FF' }
+
+    private fun looksAdministrative(text: String): Boolean {
+        val markers = listOf(
+            "округ", "район", "область",
+            "okrug", "district", "region", "municipality", "gorodskoy",
+        )
+        return markers.any { text.contains(it, ignoreCase = true) }
     }
 
     /** Геокодинг ручного города через Open-Meteo. */
