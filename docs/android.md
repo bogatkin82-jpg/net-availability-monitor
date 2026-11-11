@@ -219,8 +219,8 @@ export ANDROID_KEYSTORE_PATH=/path/to/netmon-release.jks \
 
 Цвет статуса (из `status_colors` в `config.json`) показывается в шторке уведомлений:
 
-![Строка состояния](../docs/screenshots/android-statusbar.png)
-![Шторка](../docs/screenshots/android-notification.png)
+![Строка состояния](screenshots/android-statusbar.png)
+![Шторка](screenshots/android-notification.png)
 Сервис включается переключателем «Индикатор статуса в строке состояния» в настройках и
 автоматически при открытии приложения, если включён; после перезагрузки телефона его нужно
 запустить снова (Android ограничивает фоновый автозапуск).
