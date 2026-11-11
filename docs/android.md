@@ -243,6 +243,16 @@ export ANDROID_KEYSTORE_PATH=/path/to/netmon-release.jks \
 
 ![Виджет-часы](screenshots/android-widget.png)
 
+## Геолокация, погода и атрибуция
+
+- Разрешения `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` запрашиваются только по кнопке
+  в настройках и нужны для определения города в виджете; координаты не сохраняются на сервере.
+- Частота обновления города: 2 / 4 / 8 часов или «вручную».
+- Погода: [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+- Обратное геокодирование: [OpenStreetMap](https://www.openstreetmap.org/copyright)
+  / [Nominatim](https://nominatim.org/) (ODbL), резервно BigDataCloud.
+- Публичная сборка использует системный шрифт и векторные иконки; HONOR-ассеты не входят в неё.
+
 ## Nightly
 
 Каждую ночь workflow `Android APK` (cron `15 2 * * *`) публикует prerelease с тегом

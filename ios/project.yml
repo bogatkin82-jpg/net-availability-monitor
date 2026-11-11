@@ -42,8 +42,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ru.netmon.ios
         PRODUCT_NAME: NetMon
-        MARKETING_VERSION: "1.4.0"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "1.5.0"
+        CURRENT_PROJECT_VERSION: "8"
         # iPhone-only портретное приложение.
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO

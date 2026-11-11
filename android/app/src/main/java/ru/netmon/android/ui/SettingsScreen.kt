@@ -362,7 +362,9 @@ fun SettingsScreen(
         Spacer(Modifier.height(14.dp))
         Text(
             text = "Источник сервисов, эндпоинтов, таймаутов, порогов, статусов, цветов и подсказок — " +
-                "config.json из корня репозитория (копируется в assets при сборке).",
+                "config.json из корня репозитория (копируется в assets при сборке).\n\n" +
+                "Погода: Open-Meteo.com (CC BY 4.0). Геокодинг: OpenStreetMap/Nominatim (ODbL), " +
+                "BigDataCloud. Геолокация используется только для определения города в виджете.",
             color = TextMuted,
             style = MaterialTheme.typography.labelSmall,
         )

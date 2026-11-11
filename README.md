@@ -90,6 +90,23 @@ status-bar tint is controlled by the system theme. Settings
 (interval, thresholds, enabled services, notifications) are editable in the app and default to
 `config.json`. See [docs/android.md](docs/android.md).
 
+### Weather widget, location and data sources
+
+The Android app also ships a home-screen **clock + weather widget**: the time is tinted by the
+worst network status, the city is shown above it, and current weather is displayed on the right.
+City updates can be configured for **2, 4 or 8 hours**, or set to **manual** in the app settings.
+
+- **Location permission:** `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` is requested only
+  after you tap the corresponding button in Settings. Coordinates are used solely to determine
+  the city and to request a local forecast; they are not stored on our servers. You can deny the
+  permission, choose **manual** mode and enter a city manually — the widget will still work.
+- **Weather data:** [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+- **Reverse geocoding:** [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors
+  via [Nominatim](https://nominatim.org/) (ODbL), with BigDataCloud as a fallback.
+- **Public builds** use the system font and original vector icons. HONOR-specific fonts and weather
+  icons used in the author's private local build are **not** distributed in this repository or in
+  release artifacts.
+
 ## Signed builds
 
 - **Android:** the release APK/AAB is signed by the project release keystore (RSA-4096,
