@@ -1,5 +1,8 @@
 package ru.netmon.android.ui
 
+import android.content.Intent
+import android.provider.Settings
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.netmon.core.AppConfig
@@ -47,6 +51,8 @@ fun SettingsScreen(
     onStopService: () -> Unit,
     onResetHistory: () -> Unit,
 ) {
+    val context = LocalContext.current
+
     var draft by remember(settings) { mutableStateOf(settings) }
     var showResetDialog by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
@@ -234,6 +240,13 @@ fun SettingsScreen(
                 color = TextMuted,
                 style = MaterialTheme.typography.labelSmall,
             )
+            TextButton(
+                onClick = {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    context.startActivity(intent)
+                },
+            ) { Text("Настройки уведомлений приложения") }
             SwitchRow(
                 label = "Индикатор статуса в строке состояния",
                 caption = "запускать при сохранении настроек и при открытии приложения",

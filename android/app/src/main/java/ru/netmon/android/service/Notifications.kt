@@ -2,6 +2,8 @@ package ru.netmon.android.service
 
 import android.app.Notification
 import android.graphics.Color
+import android.media.AudioAttributes
+import android.net.Uri
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -23,17 +25,31 @@ class Notifications(private val context: Context, private val config: AppConfig)
     private val manager: NotificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    /** Канал статуса — тихий, низкий приоритет. */
+    /**
+     * Канал статуса для строки состояния. Настройка Android
+     * «Скрывать тихие уведомления в строке состояния» (hideSilentStatusBar)
+     * убирает иконки полностью беззвучных уведомлений, поэтому канал формально
+     * не «тихий»: ему назначен ресурс с 0.1 с тишины. Реального звука нет,
+     * вибрация выключена, обновления идут с ONLY_ALERT_ONCE.
+     * id v3 — важность/звук существующего канала изменить нельзя.
+     */
     fun ensureStatusChannel() {
         val channel = NotificationChannel(
             CHANNEL_STATUS,
             context.getString(R.string.notification_channel_status),
-            NotificationManager.IMPORTANCE_LOW,
+            NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = context.getString(R.string.notification_channel_status_desc)
             setShowBadge(false)
             enableVibration(false)
-            setSound(null, null)
+            setSound(
+                silentSoundUri(),
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            )
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
         manager.createNotificationChannel(channel)
     }
@@ -124,6 +140,9 @@ class Notifications(private val context: Context, private val config: AppConfig)
         }
     }
 
+    private fun silentSoundUri(): Uri =
+        Uri.parse("android.resource://${context.packageName}/${R.raw.silent}")
+
     /** Постоянное уведомление со сводкой статусов и иконкой-индикатором. */
     fun statusNotification(snapshot: Snapshot): Notification {
         val lines = snapshot.services.joinToString(" · ") { service ->
@@ -140,6 +159,7 @@ class Notifications(private val context: Context, private val config: AppConfig)
             .setStyle(Notification.BigTextStyle().bigText(lines))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setSound(silentSoundUri())
             .setShowWhen(true)
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -213,7 +233,7 @@ class Notifications(private val context: Context, private val config: AppConfig)
     }
 
     companion object {
-        const val CHANNEL_STATUS: String = "net_monitor_status"
+        const val CHANNEL_STATUS: String = "net_monitor_status_v3"
         const val STATUS_NOTIFICATION_ID: Int = 1001
         const val ALERT_NOTIFICATION_BASE: Int = 2000
         private const val REQ_CHECK = 11
