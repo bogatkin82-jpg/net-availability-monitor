@@ -216,10 +216,40 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Добавить виджет-часы на главный экран") }
             var cityDraft by remember { mutableStateOf(WidgetCityPrefs.get(context)) }
+            var geoRefresh by remember { mutableStateOf(WidgetCityPrefs.geoRefreshMinutes(context)) }
+            Text(
+                text = "Обновление города по GPS",
+                color = TextPrimary,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(15 to "15 мин", 30 to "30 мин", 60 to "1 час", -1 to "вручную")
+                    .forEach { (minutes, label) ->
+                        FilterChip(
+                            selected = geoRefresh == minutes,
+                            onClick = {
+                                geoRefresh = minutes
+                                WidgetCityPrefs.setGeoRefreshMinutes(context, minutes)
+                                WeatherRepository.refreshIfNeeded(context, force = true)
+                            },
+                            label = { Text(label) },
+                        )
+                    }
+            }
+            Text(
+                text = "«вручную» — город берётся из поля ниже, GPS-обновление не выполняется",
+                color = TextMuted,
+                style = MaterialTheme.typography.labelSmall,
+            )
             OutlinedTextField(
                 value = cityDraft,
                 onValueChange = { cityDraft = it },
-                label = { Text("Город для виджета-погоды") },
+                label = { Text("Город для часов (вручную)") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -235,6 +265,10 @@ fun SettingsScreen(
                 ActivityResultContracts.RequestMultiplePermissions(),
             ) { granted ->
                 if (granted.values.any { it }) {
+                    if (WidgetCityPrefs.geoRefreshMinutes(context) < 0) {
+                        WidgetCityPrefs.setGeoRefreshMinutes(context, 30)
+                        geoRefresh = 30
+                    }
                     WeatherRepository.refreshIfNeeded(context, force = true)
                     Toast.makeText(context, "Город будет по геопозиции", Toast.LENGTH_SHORT).show()
                 } else {

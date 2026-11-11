@@ -41,7 +41,12 @@ object WeatherRepository {
 
     fun refreshIfNeeded(context: Context, force: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (!force && cached != null && now - fetchedAtMs < CACHE_TTL_MS) return
+        if (
+            !force &&
+            !cityRefreshDue(context) &&
+            cached != null &&
+            now - fetchedAtMs < CACHE_TTL_MS
+        ) return
         val appContext = context.applicationContext
         executor.execute {
             try {
@@ -64,12 +69,31 @@ object WeatherRepository {
 
     /** @return latitude, longitude, city */
     private fun fetchGeo(context: Context): Triple<Double, Double, String> {
-        // Как в оригинале: сначала координаты телефона.
-        locationGeo(context)?.let { return it }
         val manual = WidgetCityPrefs.get(context)
+        val refreshMinutes = WidgetCityPrefs.geoRefreshMinutes(context)
+        val cached = WidgetCityPrefs.cachedGeo(context)
+        val now = System.currentTimeMillis()
+        val autoRefresh = refreshMinutes > 0
+        val due = autoRefresh && (
+            cached == null || now - cached.fetchedAtMs >= refreshMinutes * 60_000L
+            )
+
+        if (autoRefresh && !due && cached != null) {
+            return Triple(cached.latitude, cached.longitude, cached.city)
+        }
+        if (autoRefresh) {
+            locationGeo(context)?.let { point ->
+                WidgetCityPrefs.saveCachedGeo(context, point.first, point.second, point.third)
+                return point
+            }
+        }
+        // Ручной город (режим «вручную» или запасной вариант, если GPS недоступен).
         if (manual.isNotBlank()) {
             val point = geocode(manual)
             if (point != null) return point
+        }
+        if (cached != null) {
+            return Triple(cached.latitude, cached.longitude, cached.city)
         }
         val primary = runCatching { fetchJson("https://ipapi.co/json/") }.getOrNull()
         if (primary != null && primary.optBoolean("error", false).not()) {
@@ -84,6 +108,13 @@ object WeatherRepository {
         val lon = fallback.optDouble("longitude", Double.NaN)
         require(!lat.isNaN() && !lon.isNaN()) { "no coordinates" }
         return Triple(lat, lon, fallback.optString("city", "").ifBlank { "—" })
+    }
+
+    private fun cityRefreshDue(context: Context): Boolean {
+        val interval = WidgetCityPrefs.geoRefreshMinutes(context)
+        if (interval <= 0) return false
+        val cached = WidgetCityPrefs.cachedGeo(context) ?: return true
+        return System.currentTimeMillis() - cached.fetchedAtMs >= interval * 60_000L
     }
 
     /** Последняя известная геопозиция + обратное геокодирование в город. */
