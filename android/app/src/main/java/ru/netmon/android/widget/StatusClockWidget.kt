@@ -124,6 +124,23 @@ class StatusClockWidget : AppWidgetProvider() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
             views.setOnClickPendingIntent(R.id.widget_root, pending)
+
+            // Клик по погоде открывает штатное приложение HONOR Погода.
+            val weatherIntent = Intent().apply {
+                component = ComponentName(
+                    "com.hihonor.android.totemweather",
+                    "com.hihonor.android.totemweather.WeatherHome",
+                )
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+            }
+            val weatherPending = PendingIntent.getActivity(
+                context, 1, weatherIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            listOf(
+                R.id.widget_weather, R.id.widget_city, R.id.widget_temp,
+                R.id.widget_condition, R.id.widget_weather_icon,
+            ).forEach { id -> views.setOnClickPendingIntent(id, weatherPending) }
             return views
         }
 
