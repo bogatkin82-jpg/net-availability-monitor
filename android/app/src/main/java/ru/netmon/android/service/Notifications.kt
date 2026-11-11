@@ -52,7 +52,23 @@ class Notifications(private val context: Context, private val config: AppConfig)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
         manager.createNotificationChannel(channel)
+
+        val hidden = NotificationChannel(
+            CHANNEL_STATUS_HIDDEN,
+            context.getString(R.string.notification_channel_status_hidden),
+            NotificationManager.IMPORTANCE_MIN,
+        ).apply {
+            description = context.getString(R.string.notification_channel_status_hidden_desc)
+            setShowBadge(false)
+            enableVibration(false)
+            setSound(null, null)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
+        manager.createNotificationChannel(hidden)
     }
+
+    private fun statusChannelId(): String =
+        if (StatusIconPrefs.isHidden(context)) CHANNEL_STATUS_HIDDEN else CHANNEL_STATUS
 
     private fun contentIntent(): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -118,7 +134,8 @@ class Notifications(private val context: Context, private val config: AppConfig)
         val overall = snapshot.summary.overall
         val indicator = indicatorStatus(snapshot)
         val title = "Мониторинг сети · ${snapshot.summary.overallLabel}"
-        val builder = Notification.Builder(context, CHANNEL_STATUS)
+        val hidden = StatusIconPrefs.isHidden(context)
+        val builder = Notification.Builder(context, statusChannelId())
             .setSmallIcon(statusIcon(indicator))
             .setColor(statusColor(indicator))
             .setContentTitle(title)
@@ -126,7 +143,6 @@ class Notifications(private val context: Context, private val config: AppConfig)
             .setStyle(Notification.BigTextStyle().bigText(lines))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setSound(silentSoundUri())
             .setShowWhen(true)
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -145,6 +161,9 @@ class Notifications(private val context: Context, private val config: AppConfig)
                     serviceIntent(MonitorService.ACTION_STOP, REQ_STOP),
                 ).build(),
             )
+        if (!hidden) {
+            builder.setSound(silentSoundUri())
+        }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
         }
@@ -163,6 +182,7 @@ class Notifications(private val context: Context, private val config: AppConfig)
 
     companion object {
         const val CHANNEL_STATUS: String = "net_monitor_status_v3"
+        const val CHANNEL_STATUS_HIDDEN: String = "net_monitor_status_hidden_v1"
         const val STATUS_NOTIFICATION_ID: Int = 1001
         private const val REQ_CHECK = 11
         private const val REQ_STOP = 12

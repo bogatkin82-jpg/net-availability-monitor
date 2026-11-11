@@ -51,6 +51,7 @@ import androidx.core.content.ContextCompat
 import ru.netmon.android.widget.StatusClockWidget
 import ru.netmon.android.widget.WeatherRepository
 import ru.netmon.android.widget.WidgetCityPrefs
+import ru.netmon.android.service.StatusIconPrefs
 import ru.netmon.core.UserSettings
 
 /** Экран «Настройки»: значения по умолчанию — из config.json, правки — в SharedPreferences. */
@@ -286,6 +287,15 @@ fun SettingsScreen(
                 caption = "запускать при сохранении настроек и при открытии приложения",
                 checked = draft.foregroundService,
             ) { draft = draft.copy(foregroundService = it) }
+            var hideStatusIcon by remember { mutableStateOf(StatusIconPrefs.isHidden(context)) }
+            SwitchRow(
+                label = "Скрывать значок в строке состояния",
+                caption = "тихий канал: на HONOR значок обычно скрывается, сервис продолжает работать",
+                checked = hideStatusIcon,
+            ) { enabled ->
+                hideStatusIcon = enabled
+                StatusIconPrefs.set(context, enabled)
+            }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(

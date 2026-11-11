@@ -55,6 +55,11 @@ class MonitorService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            ACTION_REFRESH_NOTIFICATION -> {
+                ensureForeground()
+                notifications.notifyStatus(controller.snapshot.value)
+                return START_STICKY
+            }
             ACTION_CHECK_NOW -> {
                 ensureForeground()
                 scope.launch { runRoundAndPublish() }
@@ -111,6 +116,7 @@ class MonitorService : Service() {
         const val ACTION_START = "ru.netmon.android.action.START"
         const val ACTION_STOP = "ru.netmon.android.action.STOP"
         const val ACTION_CHECK_NOW = "ru.netmon.android.action.CHECK_NOW"
+        const val ACTION_REFRESH_NOTIFICATION = "ru.netmon.android.action.REFRESH_NOTIFICATION"
 
         @Volatile
         var isRunning: Boolean = false
@@ -125,6 +131,15 @@ class MonitorService : Service() {
 
         fun stop(context: Context) {
             context.stopService(Intent(context, MonitorService::class.java))
+        }
+
+        /** Перерисовать постоянное уведомление после смены канала. */
+        fun refreshNotification(context: Context) {
+            if (!isRunning) return
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, MonitorService::class.java).setAction(ACTION_REFRESH_NOTIFICATION),
+            )
         }
 
         fun checkNow(context: Context) {

@@ -36,6 +36,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ru.netmon.android.AppContainer
 import ru.netmon.android.service.MonitorService
+
 import ru.netmon.core.UserSettings
 
 private enum class Tab(val title: String, val glyph: String) {
@@ -153,6 +154,7 @@ fun NetMonRoot(container: AppContainer) {
                             MonitorService.stop(context)
                             serviceRunning = false
                         }
+                        if (serviceRunning) MonitorService.refreshNotification(context)
                     },
                     onStartService = {
                         MonitorService.start(context)
