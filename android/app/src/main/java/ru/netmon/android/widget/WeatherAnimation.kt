@@ -36,8 +36,16 @@ object WeatherAnimation {
                 R.drawable.ic_snow_frame_26,
                 R.drawable.ic_snow_frame_27,
                 R.drawable.ic_snow_frame_28,
+                R.drawable.ic_snow_frame_29,
+                R.drawable.ic_snow_frame_30,
+                R.drawable.ic_snow_frame_31,
+                R.drawable.ic_snow_frame_32,
+                R.drawable.ic_snow_frame_33,
+                R.drawable.ic_snow_frame_34,
+                R.drawable.ic_snow_frame_35,
+                R.drawable.ic_snow_frame_36,
             ),
-            321L,
+            250L,
         ),
         RAIN(
             intArrayOf(
