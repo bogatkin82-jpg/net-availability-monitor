@@ -48,11 +48,16 @@ object CloudSkyRenderer {
         Triple(0.00f, 0.15f, 0.40f),
     )
     private val craters = listOf(
-        Triple(-0.28f, -0.22f, 0.16f),
-        Triple(0.10f, -0.36f, 0.10f),
-        Triple(-0.05f, 0.20f, 0.13f),
-        Triple(0.34f, 0.10f, 0.09f),
-        Triple(-0.42f, 0.28f, 0.08f),
+        Triple(-0.34f, -0.28f, 0.17f),
+        Triple(-0.04f, -0.42f, 0.11f),
+        Triple(0.26f, -0.22f, 0.14f),
+        Triple(-0.18f, 0.14f, 0.21f),
+        Triple(0.20f, 0.24f, 0.13f),
+        Triple(0.44f, 0.04f, 0.10f),
+        Triple(-0.46f, 0.30f, 0.09f),
+        Triple(0.03f, 0.04f, 0.08f),
+        Triple(-0.10f, -0.10f, 0.07f),
+        Triple(0.36f, -0.40f, 0.07f),
     )
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -123,40 +128,17 @@ object CloudSkyRenderer {
         val fraction = ((1.0 - cos(2.0 * PI * phase)) / 2.0).toFloat().coerceIn(0f, 1f)
         val waxing = phase < 0.5
 
-        // окно чистого ночного неба
-        paint.shader = RadialGradient(
-            cx, cy, r * 2.4f,
-            intArrayOf(Color.argb(200, 5, 11, 24), Color.argb(0, 5, 11, 24)),
-            null, Shader.TileMode.CLAMP,
-        )
-        canvas.drawCircle(cx, cy, r * 2.4f, paint)
-        paint.shader = null
-
-        paint.shader = RadialGradient(
-            cx, cy, r * 2.0f,
-            intArrayOf(Color.argb(90, 205, 220, 255), Color.argb(0, 205, 220, 255)),
-            null, Shader.TileMode.CLAMP,
-        )
-        canvas.drawCircle(cx, cy, r * 2.0f, paint)
-        paint.shader = null
-
         val layer = canvas.saveLayer(cx - r, cy - r, cx + r, cy + r, null)
-        // лунный диск с потемнением к краю
+        // лунный диск с потемнением к краю, без ореола
         paint.shader = RadialGradient(
             cx, cy, r,
-            intArrayOf(Color.rgb(246, 244, 234), Color.rgb(196, 194, 184)),
+            intArrayOf(Color.rgb(242, 240, 230), Color.rgb(188, 186, 176)),
             null, Shader.TileMode.CLAMP,
         )
         canvas.drawCircle(cx, cy, r, paint)
         paint.shader = null
 
-        // кратеры (видны на освещённой части)
-        paint.color = Color.argb(70, 120, 120, 112)
-        for ((dx, dy, rr) in craters) {
-            canvas.drawCircle(cx + dx * r, cy + dy * r, rr * r, paint)
-        }
-
-        // фазовый терминатор: эллиптическая тень
+        // фаза: эллиптическая тень
         if (fraction < 0.995f) {
             val rx = r * (1f - fraction)
             val shadowCx = if (waxing) cx - r * fraction else cx + r * fraction
@@ -168,14 +150,28 @@ object CloudSkyRenderer {
             paint.xfermode = null
         }
 
-        // земное сияние и контур, чтобы тонкий серп не терялся
-        paint.color = Color.argb(115, 225, 232, 245)
+        // земное сияние: тёмная сторона остаётся различимой
+        paint.color = Color.argb(110, 220, 226, 238)
         canvas.drawCircle(cx, cy, r, paint)
-        paint.color = Color.argb(185, 235, 240, 250)
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1.8f
-        canvas.drawCircle(cx, cy, r, paint)
-        paint.style = Paint.Style.FILL
+
+        // кратеры по всей видимой поверхности: тёмное углубление + светлый край
+        canvas.save()
+        canvas.clipPath(Path().apply { addCircle(cx, cy, r, Path.Direction.CW) })
+        for ((dx, dy, rr) in craters) {
+            val px = cx + dx * r
+            val py = cy + dy * r
+            val pr = rr * r
+            paint.color = Color.argb(85, 96, 96, 90)
+            canvas.drawCircle(px, py, pr, paint)
+            paint.color = Color.argb(70, 255, 255, 250)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1.2f
+            canvas.drawCircle(px, py, pr, paint)
+            paint.style = Paint.Style.FILL
+            paint.color = Color.argb(45, 255, 255, 255)
+            canvas.drawCircle(px - pr * 0.28f, py - pr * 0.28f, pr * 0.45f, paint)
+        }
+        canvas.restore()
         canvas.restoreToCount(layer)
     }
 
