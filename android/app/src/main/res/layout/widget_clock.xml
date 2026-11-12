@@ -23,7 +23,7 @@
         android:textFontWeight="500"
         android:textSize="13dp" />
 
-    <TextView
+    <TextClock
         android:id="@+id/widget_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -31,12 +31,13 @@
         android:layout_below="@id/widget_city"
         android:layout_marginTop="2dp"
         android:fontFamily="sans-serif-light"
+        android:format12Hour="HH:mm"
+        android:format24Hour="HH:mm"
         android:includeFontPadding="false"
         android:shadowColor="#66000000"
         android:shadowDx="0"
         android:shadowDy="2"
         android:shadowRadius="6"
-        android:text="--:--"
         android:textColor="#FFFFFFFF"
         android:textSize="50dp" />
 

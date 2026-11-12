@@ -51,7 +51,6 @@ class StatusClockWidget : AppWidgetProvider() {
         @Volatile
         private var weatherFrame: Int = 0
 
-        private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         private val dateFormat = SimpleDateFormat("d MMMM EEE", Locale("ru"))
 
         /** Вызывается сервисом после каждого раунда проверок. */
@@ -111,7 +110,6 @@ class StatusClockWidget : AppWidgetProvider() {
             val status = snapshot?.let { worstStatus(it) } ?: Status.UNKNOWN
             val color = statusColor(context, status)
             val now = Date()
-            views.setTextViewText(R.id.widget_time, timeFormat.format(now))
             views.setTextColor(R.id.widget_time, color)
             val dateParts = dateFormat.format(now).split(" ")
             val weekday = dateParts.last().replaceFirstChar { it.uppercase() }
