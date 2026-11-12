@@ -70,6 +70,47 @@ object WeatherAnimation {
             ),
             200L,
         ),
+        CLOUDY(
+            intArrayOf(
+                R.drawable.ic_cloud_frame_1,
+                R.drawable.ic_cloud_frame_2,
+                R.drawable.ic_cloud_frame_3,
+                R.drawable.ic_cloud_frame_4,
+                R.drawable.ic_cloud_frame_5,
+                R.drawable.ic_cloud_frame_6,
+                R.drawable.ic_cloud_frame_7,
+                R.drawable.ic_cloud_frame_8,
+                R.drawable.ic_cloud_frame_9,
+                R.drawable.ic_cloud_frame_10,
+                R.drawable.ic_cloud_frame_11,
+                R.drawable.ic_cloud_frame_12,
+                R.drawable.ic_cloud_frame_13,
+                R.drawable.ic_cloud_frame_14,
+                R.drawable.ic_cloud_frame_15,
+                R.drawable.ic_cloud_frame_16,
+                R.drawable.ic_cloud_frame_17,
+                R.drawable.ic_cloud_frame_18,
+                R.drawable.ic_cloud_frame_19,
+                R.drawable.ic_cloud_frame_20,
+                R.drawable.ic_cloud_frame_21,
+                R.drawable.ic_cloud_frame_22,
+                R.drawable.ic_cloud_frame_23,
+                R.drawable.ic_cloud_frame_24,
+                R.drawable.ic_cloud_frame_25,
+                R.drawable.ic_cloud_frame_26,
+                R.drawable.ic_cloud_frame_27,
+                R.drawable.ic_cloud_frame_28,
+                R.drawable.ic_cloud_frame_29,
+                R.drawable.ic_cloud_frame_30,
+                R.drawable.ic_cloud_frame_31,
+                R.drawable.ic_cloud_frame_32,
+                R.drawable.ic_cloud_frame_33,
+                R.drawable.ic_cloud_frame_34,
+                R.drawable.ic_cloud_frame_35,
+                R.drawable.ic_cloud_frame_36,
+            ),
+            300L,
+        ),
         DRIZZLE(
             intArrayOf(
                 R.drawable.ic_drizzle_frame_1,
@@ -168,6 +209,7 @@ object WeatherAnimation {
     }
 
     fun kindFor(weatherCode: Int): Kind? = when (weatherCode) {
+        1, 2, 3 -> Kind.CLOUDY
         45, 48 -> Kind.FOG
         51, 53, 55, 56, 57 -> Kind.DRIZZLE
         61, 63, 65, 66, 67, 80, 81, 82 -> Kind.RAIN
