@@ -124,11 +124,25 @@ class StatusClockWidget : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_temp, "${weather.temperatureC}°")
                 views.setTextViewText(R.id.widget_condition, conditionLabel(weather.weatherCode))
                 val animation = WeatherAnimation.kindFor(weather.weatherCode)
-                views.setImageViewResource(
-                    R.id.widget_weather_icon,
-                    if (animation != null) WeatherAnimation.drawable(animation, weatherFrame)
-                    else weatherIcon(context, weather.weatherCode, weather.isDay),
-                )
+                if (animation == WeatherAnimation.Kind.CLOUDY) {
+                    runCatching {
+                        views.setImageViewBitmap(
+                            R.id.widget_weather_icon,
+                            CloudSkyRenderer.render(weather.isDay, weatherFrame),
+                        )
+                    }.onFailure {
+                        views.setImageViewResource(
+                            R.id.widget_weather_icon,
+                            weatherIcon(context, weather.weatherCode, weather.isDay),
+                        )
+                    }
+                } else {
+                    views.setImageViewResource(
+                        R.id.widget_weather_icon,
+                        if (animation != null) WeatherAnimation.drawable(animation, weatherFrame)
+                        else weatherIcon(context, weather.weatherCode, weather.isDay),
+                    )
+                }
             } else {
                 views.setTextViewText(R.id.widget_city, "Погода")
                 views.setTextViewText(R.id.widget_temp, "--°")
