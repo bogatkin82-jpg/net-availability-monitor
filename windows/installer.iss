@@ -4,7 +4,7 @@
 
 #define MyAppName "net-availability-monitor"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.5.3"
+  #define MyAppVersion "1.5.4"
 #endif
 #define MyAppPublisher "net-availability-monitor"
 #define MyAppURL "https://github.com/bogatkin82-jpg/net-availability-monitor"
