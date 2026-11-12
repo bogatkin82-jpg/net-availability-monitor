@@ -139,7 +139,8 @@ object WeatherAnimation {
 
     fun kindFor(weatherCode: Int): Kind? = when (weatherCode) {
         45, 48 -> Kind.FOG
-        51, 53, 55, 56, 57 -> Kind.DRIZZLE
+        // Морось показываем заметной анимацией дождя (короткие штрихи читались как статика).
+        51, 53, 55, 56, 57,
         61, 63, 65, 66, 67, 80, 81, 82 -> Kind.RAIN
         71, 73, 75, 77, 85, 86 -> Kind.SNOW
         95, 96, 99 -> Kind.STORM
