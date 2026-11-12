@@ -3,6 +3,7 @@
 
     <!-- Сеть: постадийные проверки DNS/TCP/TLS/HTTP -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -31,6 +32,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".widget.WidgetTickReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="ru.netmon.android.action.WIDGET_CLOCK_TICK" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".widget.WidgetBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".widget.StatusClockWidget"

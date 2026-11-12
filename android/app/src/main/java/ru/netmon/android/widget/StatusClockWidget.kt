@@ -30,7 +30,18 @@ class StatusClockWidget : AppWidgetProvider() {
         appWidgetIds: IntArray,
     ) {
         WeatherRepository.refreshIfNeeded(context)
+        WidgetTickScheduler.schedule(context)
         renderAll(context, latestSnapshot)
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetTickScheduler.schedule(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        WidgetTickScheduler.cancel(context)
+        super.onDisabled(context)
     }
 
     companion object {
