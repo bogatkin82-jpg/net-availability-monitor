@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 import ru.netmon.android.NetMonApp
 import ru.netmon.android.monitor.MonitorController
 import ru.netmon.android.widget.StatusClockWidget
+import ru.netmon.android.widget.WeatherRepository
 import ru.netmon.core.Snapshot
 import ru.netmon.core.UserSettings
 
@@ -37,6 +39,7 @@ class MonitorService : Service() {
     private lateinit var notifications: Notifications
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var loopJob: Job? = null
+    private var snowJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -103,9 +106,25 @@ class MonitorService : Service() {
         val snapshot = controller.refresh() ?: return
         notifications.notifyStatus(snapshot)
         StatusClockWidget.updateAll(this, snapshot)
+        startSnowAnimationIfNeeded()
+    }
+
+    private fun startSnowAnimationIfNeeded() {
+        if (snowJob?.isActive == true) return
+        snowJob = scope.launch {
+            val power = getSystemService(Context.POWER_SERVICE) as PowerManager
+            while (isActive) {
+                val code = WeatherRepository.cached?.weatherCode ?: break
+                val snow = code in 71..77 || code in 85..86
+                if (!snow) break
+                if (power.isInteractive) StatusClockWidget.advanceSnowFrame(this@MonitorService)
+                delay(700L)
+            }
+        }
     }
 
     override fun onDestroy() {
+        snowJob?.cancel()
         loopJob?.cancel()
         scope.cancel()
         isRunning = false
