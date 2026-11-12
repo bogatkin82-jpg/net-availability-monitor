@@ -31,13 +31,13 @@ object CloudSkyRenderer {
     )
 
     private val farClouds = listOf(
-        Cloud(0.10f, 0.30f, 0.85f, 0.28f, 0.22f),
-        Cloud(0.55f, 0.38f, 1.05f, 0.20f, 0.20f),
-        Cloud(0.82f, 0.26f, 0.70f, 0.33f, 0.18f),
+        Cloud(0.10f, 0.50f, 0.65f, 0.28f, 0.11f),
+        Cloud(0.55f, 0.55f, 0.75f, 0.20f, 0.10f),
+        Cloud(0.82f, 0.47f, 0.55f, 0.33f, 0.09f),
     )
     private val nearClouds = listOf(
-        Cloud(0.30f, 0.58f, 1.25f, 0.55f, 0.52f),
-        Cloud(0.78f, 0.52f, 1.00f, 0.42f, 0.46f),
+        Cloud(0.30f, 0.72f, 0.95f, 0.55f, 0.18f),
+        Cloud(0.78f, 0.68f, 0.80f, 0.42f, 0.16f),
     )
     private val puffs = listOf(
         Triple(-0.40f, 0.06f, 0.34f),
@@ -60,17 +60,20 @@ object CloudSkyRenderer {
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+        // Светило рисуем поверх облаков с мягким ореолом, иначе тонкий серп
+        // и солнце теряются в белых облаках.
+        drawCloudLayer(canvas, farClouds, frame)
+        drawCloudLayer(canvas, nearClouds, frame)
         if (isDay) drawSun(canvas) else drawMoon(canvas, phase)
-        drawClouds(canvas, frame)
         cacheKey = key
         cache = bitmap
         return bitmap
     }
 
     private fun drawSun(canvas: Canvas) {
-        val cx = SIZE * 0.74f
-        val cy = SIZE * 0.22f
-        val r = SIZE * 0.085f
+        val cx = SIZE * 0.76f
+        val cy = SIZE * 0.16f
+        val r = SIZE * 0.140f
         paint.shader = RadialGradient(
             cx, cy, r * 3.2f,
             intArrayOf(Color.argb(120, 255, 226, 150), Color.argb(0, 255, 226, 150)),
@@ -86,16 +89,23 @@ object CloudSkyRenderer {
     }
 
     private fun drawMoon(canvas: Canvas, phase: Double) {
-        val cx = SIZE * 0.74f
-        val cy = SIZE * 0.22f
-        val r = SIZE * 0.082f
+        val cx = SIZE * 0.76f
+        val cy = SIZE * 0.16f
+        val r = SIZE * 0.120f
+        // окно чистого ночного неба вокруг луны — контраст с облаками
         paint.shader = RadialGradient(
-            cx, cy, r * 3.0f,
-            intArrayOf(Color.argb(90, 210, 226, 255), Color.argb(0, 210, 226, 255)),
+            cx, cy, r * 2.6f,
+            intArrayOf(Color.argb(205, 5, 11, 24), Color.argb(0, 5, 11, 24)),
             null, Shader.TileMode.CLAMP,
         )
         paint.alpha = 255
-        canvas.drawCircle(cx, cy, r * 3.0f, paint)
+        canvas.drawCircle(cx, cy, r * 2.6f, paint)
+        paint.shader = RadialGradient(
+            cx, cy, r * 2.2f,
+            intArrayOf(Color.argb(95, 210, 226, 255), Color.argb(0, 210, 226, 255)),
+            null, Shader.TileMode.CLAMP,
+        )
+        canvas.drawCircle(cx, cy, r * 2.2f, paint)
         paint.shader = null
 
         val fraction = ((1.0 - cos(2.0 * PI * phase)) / 2.0).toFloat().coerceIn(0f, 1f)
@@ -121,6 +131,14 @@ object CloudSkyRenderer {
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
         canvas.drawPath(shadow, paint)
         paint.xfermode = null
+        // земное сияние: даже тонкий серп остаётся видимым
+        paint.color = Color.argb(80, 235, 240, 255)
+        canvas.drawCircle(cx, cy, r, paint)
+        paint.color = Color.argb(160, 255, 255, 255)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.5f
+        canvas.drawCircle(cx, cy, r, paint)
+        paint.style = Paint.Style.FILL
         canvas.restoreToCount(layer)
     }
 
