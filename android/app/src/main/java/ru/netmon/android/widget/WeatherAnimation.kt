@@ -84,14 +84,8 @@ object WeatherAnimation {
                 R.drawable.ic_drizzle_frame_10,
                 R.drawable.ic_drizzle_frame_11,
                 R.drawable.ic_drizzle_frame_12,
-                R.drawable.ic_drizzle_frame_13,
-                R.drawable.ic_drizzle_frame_14,
-                R.drawable.ic_drizzle_frame_15,
-                R.drawable.ic_drizzle_frame_16,
-                R.drawable.ic_drizzle_frame_17,
-                R.drawable.ic_drizzle_frame_18,
             ),
-            233L,
+            240L,
         ),
         STORM(
             intArrayOf(
@@ -139,8 +133,7 @@ object WeatherAnimation {
 
     fun kindFor(weatherCode: Int): Kind? = when (weatherCode) {
         45, 48 -> Kind.FOG
-        // Морось показываем заметной анимацией дождя (короткие штрихи читались как статика).
-        51, 53, 55, 56, 57,
+        51, 53, 55, 56, 57 -> Kind.DRIZZLE
         61, 63, 65, 66, 67, 80, 81, 82 -> Kind.RAIN
         71, 73, 75, 77, 85, 86 -> Kind.SNOW
         95, 96, 99 -> Kind.STORM
