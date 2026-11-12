@@ -14,8 +14,14 @@ object WeatherAnimation {
                 R.drawable.ic_snow_frame_4,
                 R.drawable.ic_snow_frame_5,
                 R.drawable.ic_snow_frame_6,
+                R.drawable.ic_snow_frame_7,
+                R.drawable.ic_snow_frame_8,
+                R.drawable.ic_snow_frame_9,
+                R.drawable.ic_snow_frame_10,
+                R.drawable.ic_snow_frame_11,
+                R.drawable.ic_snow_frame_12,
             ),
-            500L,
+            250L,
         ),
         RAIN(
             intArrayOf(
@@ -23,8 +29,12 @@ object WeatherAnimation {
                 R.drawable.ic_rain_frame_2,
                 R.drawable.ic_rain_frame_3,
                 R.drawable.ic_rain_frame_4,
+                R.drawable.ic_rain_frame_5,
+                R.drawable.ic_rain_frame_6,
+                R.drawable.ic_rain_frame_7,
+                R.drawable.ic_rain_frame_8,
             ),
-            300L,
+            150L,
         ),
         DRIZZLE(
             intArrayOf(
@@ -32,8 +42,12 @@ object WeatherAnimation {
                 R.drawable.ic_drizzle_frame_2,
                 R.drawable.ic_drizzle_frame_3,
                 R.drawable.ic_drizzle_frame_4,
+                R.drawable.ic_drizzle_frame_5,
+                R.drawable.ic_drizzle_frame_6,
+                R.drawable.ic_drizzle_frame_7,
+                R.drawable.ic_drizzle_frame_8,
             ),
-            350L,
+            175L,
         ),
         STORM(
             intArrayOf(
@@ -41,16 +55,23 @@ object WeatherAnimation {
                 R.drawable.ic_storm_frame_2,
                 R.drawable.ic_storm_frame_3,
                 R.drawable.ic_storm_frame_4,
+                R.drawable.ic_storm_frame_5,
+                R.drawable.ic_storm_frame_6,
+                R.drawable.ic_storm_frame_7,
+                R.drawable.ic_storm_frame_8,
             ),
-            260L,
+            130L,
         ),
         FOG(
             intArrayOf(
                 R.drawable.ic_fog_frame_1,
                 R.drawable.ic_fog_frame_2,
                 R.drawable.ic_fog_frame_3,
+                R.drawable.ic_fog_frame_4,
+                R.drawable.ic_fog_frame_5,
+                R.drawable.ic_fog_frame_6,
             ),
-            650L,
+            325L,
         ),
     }
 
