@@ -39,7 +39,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse, urlsplit
 
-VERSION = "1.5.2"
+VERSION = "1.5.3"
 
 
 def _configure_utf8_stdio():

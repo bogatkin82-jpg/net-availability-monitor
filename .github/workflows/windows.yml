@@ -172,7 +172,7 @@ jobs:
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw "ISCC.exe не найден: $iscc" }
-          $ver = "1.5.2"
+          $ver = "1.5.3"
           if ($env:GITHUB_REF -like "refs/tags/v*") { $ver = $env:GITHUB_REF_NAME.Substring(1) }
           & $iscc "/DMyAppVersion=$ver" "windows\installer.iss"
           if ($LASTEXITCODE -ne 0) { throw "ISCC завершился с кодом $LASTEXITCODE" }
