@@ -8,4 +8,10 @@
     <string name="notification_channel_alerts">Оповещения о сбоях</string>
     <string name="notification_channel_alerts_desc">Уведомления при переходе сервиса в blocked/down</string>
     <string name="widget_clock_desc">Часы и погода; цвет времени — статус сети</string>
+    <string name="weather_url_ipapi" translatable="false">https://ipapi.co/json/</string>
+    <string name="weather_url_ipwho" translatable="false">https://ipwho.is/</string>
+    <string name="weather_url_nominatim" translatable="false">https://nominatim.openstreetmap.org/reverse?format=jsonv2</string>
+    <string name="weather_url_bigdatacloud" translatable="false">https://api.bigdatacloud.net/data/reverse-geocode-client</string>
+    <string name="weather_url_geocoding" translatable="false">https://geocoding-api.open-meteo.com/v1/search</string>
+    <string name="weather_url_open_meteo" translatable="false">https://api.open-meteo.com/v1/forecast</string>
 </resources>

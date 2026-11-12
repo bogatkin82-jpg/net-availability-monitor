@@ -9,6 +9,7 @@ import android.location.LocationManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
+import ru.netmon.android.R
 import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.net.URL
@@ -51,7 +52,7 @@ object WeatherRepository {
         executor.execute {
             try {
                 val geo = fetchGeo(appContext)
-                val weather = fetchWeather(geo.first, geo.second)
+                val weather = fetchWeather(appContext, geo.first, geo.second)
                 cached = WeatherInfo(
                     city = geo.third,
                     temperatureC = weather.first,
@@ -89,13 +90,13 @@ object WeatherRepository {
         }
         // Ручной город (режим «вручную» или запасной вариант, если GPS недоступен).
         if (manual.isNotBlank()) {
-            val point = geocode(manual)
+            val point = geocode(context, manual)
             if (point != null) return point
         }
         if (cached != null) {
             return Triple(cached.latitude, cached.longitude, cached.city)
         }
-        val primary = runCatching { fetchJson("https://ipapi.co/json/") }.getOrNull()
+        val primary = runCatching { fetchJson(context.getString(R.string.weather_url_ipapi)) }.getOrNull()
         if (primary != null && primary.optBoolean("error", false).not()) {
             val lat = primary.optDouble("latitude", Double.NaN)
             val lon = primary.optDouble("longitude", Double.NaN)
@@ -103,7 +104,7 @@ object WeatherRepository {
                 return Triple(lat, lon, primary.optString("city", "").ifBlank { "—" })
             }
         }
-        val fallback = fetchJson("https://ipwho.is/")
+        val fallback = fetchJson(context.getString(R.string.weather_url_ipwho))
         val lat = fallback.optDouble("latitude", Double.NaN)
         val lon = fallback.optDouble("longitude", Double.NaN)
         require(!lat.isNaN() && !lon.isNaN()) { "no coordinates" }
@@ -196,7 +197,7 @@ object WeatherRepository {
         // Nominatim первым: accept-language=ru даёт кириллические названия.
         runCatching {
             val json = fetchJson(
-                "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
+                context.getString(R.string.weather_url_nominatim) +
                     "&lat=$lat&lon=$lon&accept-language=ru&zoom=18",
             )
             val address = json.optJSONObject("address") ?: return@runCatching null
@@ -209,7 +210,7 @@ object WeatherRepository {
         // BigDataCloud тоже умеет ru, но иногда отдаёт транслит — фильтруем.
         runCatching {
             val json = fetchJson(
-                "https://api.bigdatacloud.net/data/reverse-geocode-client" +
+                context.getString(R.string.weather_url_bigdatacloud) +
                     "?latitude=$lat&longitude=$lon&localityLanguage=ru",
             )
             json.optString("city").ifBlank { json.optString("locality") }
@@ -239,9 +240,9 @@ object WeatherRepository {
     }
 
     /** Геокодинг ручного города через Open-Meteo. */
-    private fun geocode(city: String): Triple<Double, Double, String>? {
+    private fun geocode(context: Context, city: String): Triple<Double, Double, String>? {
         val query = URLEncoder.encode(city, "UTF-8")
-        val url = "https://geocoding-api.open-meteo.com/v1/search" +
+        val url = context.getString(R.string.weather_url_geocoding) +
             "?name=$query&count=1&language=ru&format=json"
         val results = runCatching { fetchJson(url).optJSONArray("results") }.getOrNull()
         if (results == null || results.length() == 0) return null
@@ -254,8 +255,8 @@ object WeatherRepository {
     }
 
     /** @return temperature C, weather code, isDay */
-    private fun fetchWeather(lat: Double, lon: Double): Triple<Int, Int, Boolean> {
-        val url = "https://api.open-meteo.com/v1/forecast" +
+    private fun fetchWeather(context: Context, lat: Double, lon: Double): Triple<Int, Int, Boolean> {
+        val url = context.getString(R.string.weather_url_open_meteo) +
             "?latitude=$lat&longitude=$lon" +
             "&current=temperature_2m,weather_code,is_day&timezone=auto"
         val current = fetchJson(url).getJSONObject("current")
