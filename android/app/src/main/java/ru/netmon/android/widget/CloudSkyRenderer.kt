@@ -20,7 +20,7 @@ import kotlin.math.sin
  */
 object CloudSkyRenderer {
 
-    private const val W = 384
+    private const val W = 424
     private const val H = 256
 
     private data class Cloud(
@@ -46,18 +46,6 @@ object CloudSkyRenderer {
         Triple(0.12f, -0.06f, 0.38f),
         Triple(0.38f, 0.08f, 0.30f),
         Triple(0.00f, 0.15f, 0.40f),
-    )
-    private val craters = listOf(
-        Triple(-0.34f, -0.28f, 0.17f),
-        Triple(-0.04f, -0.42f, 0.11f),
-        Triple(0.26f, -0.22f, 0.14f),
-        Triple(-0.18f, 0.14f, 0.21f),
-        Triple(0.20f, 0.24f, 0.13f),
-        Triple(0.44f, 0.04f, 0.10f),
-        Triple(-0.46f, 0.30f, 0.09f),
-        Triple(0.03f, 0.04f, 0.08f),
-        Triple(-0.10f, -0.10f, 0.07f),
-        Triple(0.36f, -0.40f, 0.07f),
     )
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -123,7 +111,7 @@ object CloudSkyRenderer {
 
     private fun drawMoon(canvas: Canvas, phase: Double) {
         val cx = W * 0.77f
-        val cy = H * 0.17f
+        val cy = H * 0.22f
         val r = H * 0.205f
         val fraction = ((1.0 - cos(2.0 * PI * phase)) / 2.0).toFloat().coerceIn(0f, 1f)
         val waxing = phase < 0.5
@@ -154,25 +142,8 @@ object CloudSkyRenderer {
         paint.color = Color.argb(110, 220, 226, 238)
         canvas.drawCircle(cx, cy, r, paint)
 
-        // кратеры по всей видимой поверхности: тёмное углубление + светлый край
-        canvas.save()
-        canvas.clipPath(Path().apply { addCircle(cx, cy, r, Path.Direction.CW) })
-        for ((dx, dy, rr) in craters) {
-            val px = cx + dx * r
-            val py = cy + dy * r
-            val pr = rr * r
-            paint.color = Color.argb(85, 96, 96, 90)
-            canvas.drawCircle(px, py, pr, paint)
-            paint.color = Color.argb(70, 255, 255, 250)
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1.2f
-            canvas.drawCircle(px, py, pr, paint)
-            paint.style = Paint.Style.FILL
-            paint.color = Color.argb(45, 255, 255, 255)
-            canvas.drawCircle(px - pr * 0.28f, py - pr * 0.28f, pr * 0.45f, paint)
-        }
-        canvas.restore()
         canvas.restoreToCount(layer)
+
     }
 
     private fun drawCloudLayer(canvas: Canvas, clouds: List<Cloud>, frame: Int) {
