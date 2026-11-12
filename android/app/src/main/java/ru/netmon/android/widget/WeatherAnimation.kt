@@ -32,8 +32,12 @@ object WeatherAnimation {
                 R.drawable.ic_snow_frame_22,
                 R.drawable.ic_snow_frame_23,
                 R.drawable.ic_snow_frame_24,
+                R.drawable.ic_snow_frame_25,
+                R.drawable.ic_snow_frame_26,
+                R.drawable.ic_snow_frame_27,
+                R.drawable.ic_snow_frame_28,
             ),
-            375L,
+            321L,
         ),
         RAIN(
             intArrayOf(
@@ -53,8 +57,10 @@ object WeatherAnimation {
                 R.drawable.ic_rain_frame_14,
                 R.drawable.ic_rain_frame_15,
                 R.drawable.ic_rain_frame_16,
+                R.drawable.ic_rain_frame_17,
+                R.drawable.ic_rain_frame_18,
             ),
-            225L,
+            200L,
         ),
         DRIZZLE(
             intArrayOf(
@@ -74,8 +80,10 @@ object WeatherAnimation {
                 R.drawable.ic_drizzle_frame_14,
                 R.drawable.ic_drizzle_frame_15,
                 R.drawable.ic_drizzle_frame_16,
+                R.drawable.ic_drizzle_frame_17,
+                R.drawable.ic_drizzle_frame_18,
             ),
-            262L,
+            233L,
         ),
         STORM(
             intArrayOf(
@@ -95,8 +103,10 @@ object WeatherAnimation {
                 R.drawable.ic_storm_frame_14,
                 R.drawable.ic_storm_frame_15,
                 R.drawable.ic_storm_frame_16,
+                R.drawable.ic_storm_frame_17,
+                R.drawable.ic_storm_frame_18,
             ),
-            195L,
+            173L,
         ),
         FOG(
             intArrayOf(
@@ -112,8 +122,10 @@ object WeatherAnimation {
                 R.drawable.ic_fog_frame_10,
                 R.drawable.ic_fog_frame_11,
                 R.drawable.ic_fog_frame_12,
+                R.drawable.ic_fog_frame_13,
+                R.drawable.ic_fog_frame_14,
             ),
-            487L,
+            417L,
         ),
     }
 

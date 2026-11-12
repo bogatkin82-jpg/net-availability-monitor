@@ -62,7 +62,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
+        android:layout_alignTop="@id/widget_time"
         android:gravity="end"
         android:orientation="vertical">
 
@@ -97,19 +97,20 @@
                 android:textSize="14dp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/widget_condition"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginTop="2dp"
-            android:fontFamily="sans-serif"
-            android:shadowColor="#66000000"
-            android:shadowDx="0"
-            android:shadowDy="1"
-            android:shadowRadius="4"
-            android:text="Облачно"
-            android:textColor="#D9FFFFFF"
-            android:textSize="12dp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_condition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignTop="@id/widget_date"
+        android:fontFamily="sans-serif"
+        android:shadowColor="#66000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="4"
+        android:text="Облачно"
+        android:textColor="#D9FFFFFF"
+        android:textSize="12dp" />
 </RelativeLayout>
