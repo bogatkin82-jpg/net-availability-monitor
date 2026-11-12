@@ -38,7 +38,7 @@ class StatusClockWidget : AppWidgetProvider() {
         private var latestSnapshot: Snapshot? = null
 
         @Volatile
-        private var snowFrame: Int = 0
+        private var weatherFrame: Int = 0
 
         private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         private val dateFormat = SimpleDateFormat("d MMMM EEE", Locale("ru"))
@@ -55,16 +55,10 @@ class StatusClockWidget : AppWidgetProvider() {
             renderAll(context, latestSnapshot)
         }
 
-        /** Следующий кадр анимации снега (вызывается сервисом). */
-        fun advanceSnowFrame(context: Context) {
-            snowFrame = (snowFrame + 1) % 3
+        /** Следующий кадр анимации осадков (вызывается сервисом). */
+        fun advanceWeatherFrame(context: Context) {
+            weatherFrame += 1
             renderAll(context, latestSnapshot)
-        }
-
-        private fun snowFrameDrawable(): Int = when (snowFrame) {
-            0 -> R.drawable.ic_snow_frame_1
-            1 -> R.drawable.ic_snow_frame_2
-            else -> R.drawable.ic_snow_frame_3
         }
 
         private fun renderAll(context: Context, snapshot: Snapshot?) {
@@ -120,11 +114,11 @@ class StatusClockWidget : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_city, weather.city)
                 views.setTextViewText(R.id.widget_temp, "${weather.temperatureC}°")
                 views.setTextViewText(R.id.widget_condition, conditionLabel(weather.weatherCode))
-                val snow = weather.weatherCode in 71..77 || weather.weatherCode in 85..86
+                val animation = WeatherAnimation.kindFor(weather.weatherCode)
                 views.setImageViewResource(
                     R.id.widget_weather_icon,
-                    if (snow) snowFrameDrawable() else
-                        weatherIcon(context, weather.weatherCode, weather.isDay),
+                    if (animation != null) WeatherAnimation.drawable(animation, weatherFrame)
+                    else weatherIcon(context, weather.weatherCode, weather.isDay),
                 )
             } else {
                 views.setTextViewText(R.id.widget_city, "Погода")
