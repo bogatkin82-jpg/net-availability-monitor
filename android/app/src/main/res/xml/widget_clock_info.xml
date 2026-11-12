@@ -3,7 +3,7 @@
     android:description="@string/widget_clock_desc"
     android:initialLayout="@layout/widget_clock"
     android:minWidth="300dp"
-    android:minHeight="100dp"
+    android:minHeight="120dp"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"
     android:targetCellHeight="2"

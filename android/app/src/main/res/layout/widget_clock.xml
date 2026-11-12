@@ -75,8 +75,8 @@
 
             <ImageView
                 android:id="@+id/widget_weather_icon"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:contentDescription="@string/widget_clock_desc"
                 android:src="@drawable/ic_weather_cloud" />
 

@@ -2,7 +2,7 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#80ffffff" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M19.50,7 L5.50,7" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#80ffffff" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M21.50,12 L7.50,12" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#80ffffff" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M23.50,17 L9.50,17" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#80ffffff" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M18.75,7 L4.75,7" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#80ffffff" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M20.75,12 L6.75,12" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#80ffffff" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M22.75,17 L8.75,17" />
 </vector>
