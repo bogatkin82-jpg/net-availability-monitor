@@ -63,7 +63,7 @@ adb shell "am start -n ru.netmon.android/.MainActivity --es widget_city 'Лес�
 | minHeight виджета | **100 dp** (как у HONOR) |
 | Клик по погоде | `com.hihonor.android.totemweather/.WeatherHome` |
 
-Локальный APK: `local-artifacts/netmon-honor-local-1.5.4.apk`.
+Локальный APK: `local-artifacts/netmon-honor-local-1.5.5.apk`.
 
 ## Расположение как в оригинале
 
